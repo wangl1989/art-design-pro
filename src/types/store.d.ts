@@ -6,7 +6,8 @@ export interface UserInfo {
   name: string
   username: string
   avatar: string
-  email: string
+  email?: string
+  tel?: string
   token: string
   accessToken?: string // JWT 访问令牌
   refreshToken?: string // JWT 刷新令牌

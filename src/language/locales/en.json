@@ -112,10 +112,11 @@
       "subTitle": "A sleek and practical interface for a great user experience"
     },
     "title": "Welcome back",
-    "subTitle": "Please enter your account and password to login",
+    "subTitle": "Please enter your account and password and captcha to login",
     "placeholder": [
       "Please enter your account",
       "Please enter your password",
+      "Please enter the captcha",
       "Please slide to verify"
     ],
     "sliderText": "Please slide to verify",

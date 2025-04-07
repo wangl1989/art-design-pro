@@ -78,9 +78,11 @@ export const useUserStore = defineStore({
     },
     setUserInfo(info: UserInfo) {
       this.info = info
+      this.saveUserData() // 添加保存到持久化存储
     },
     setLoginStatus(isLogin: boolean) {
       this.isLogin = isLogin
+      this.saveUserData() // 添加保存到持久化存储
     },
     setLanguage(lang: LanguageEnum) {
       setPageTitle(router.currentRoute.value)

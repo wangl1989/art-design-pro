@@ -1,52 +1,59 @@
-// import request from '@/utils/http'
-// import { BaseResult } from '@/types/axios'
-import AppConfig from '@/config'
+import request from '@/utils/http'
 import { BaseResult } from '@/types/axios'
-import { UserInfo } from '@/types/store'
-import avatar from '@imgs/user/avatar.png'
+import { CaptchaData, LoginParams, TokenResponse } from './model/loginModel'
+import { UserDetailResponse } from './model/userModel' // 确保导入 UserDetailResponse
 
 export class UserService {
-  // 模拟登录接口
-  static login(options: { body: string }): Promise<BaseResult> {
-    return new Promise((resolve) => {
-      const { username, password } = JSON.parse(options.body)
+  // 登录 - 接收 body 和 header 值
+  static login(body: LoginParams, key: string, deviceId: string) {
+    // 构建 headers
+    const headers = {
+      'Captcha-Key': key,
+      'Device-Id': deviceId
+    }
 
-      if (
-        username === AppConfig.systemInfo.login.username &&
-        password === AppConfig.systemInfo.login.password
-      ) {
-        resolve({
-          code: 200,
-          message: '登录成功',
-          data: {
-            accessToken:
-              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvaG4gU25vdyIsImlhdCI6MTcwNjg2NTYwMCwiZXhwIjoxNzA2OTUyMDAwfQ.8f9D4kJ2m3XlH5Q0y6Z1r2Y3n4X5pL6q8K9v2W3n4X5'
-          }
-        })
-      } else {
-        resolve({
-          code: 401,
-          message: '用户名或密码错误',
-          data: null
-        })
-      }
+    // 发送登录请求
+    return request.post<BaseResult<TokenResponse>>({
+      url: '/login',
+      params: body,
+      headers
     })
   }
 
-  // 获取用户信息
-  static getUserInfo(): Promise<BaseResult<UserInfo>> {
-    return new Promise((resolve) => {
-      resolve({
-        code: 200,
-        message: '获取用户信息成功',
-        data: {
-          id: 1,
-          name: '张三',
-          username: 'John Snow',
-          avatar: avatar,
-          email: 'art.design@gmail.com'
-        }
-      })
+  // 获取验证码
+  static getCaptcha() {
+    return request.get<BaseResult<CaptchaData>>({
+      url: '/genCaptcha',
+      // 添加时间戳防止缓存
+      params: { t: new Date().getTime() },
+      // 显式设置不发送凭证
+      withCredentials: false
+    })
+  }
+
+  // 刷新 Token
+  static refreshToken(refreshToken: string) {
+    if (!refreshToken) {
+      return Promise.reject(new Error('Refresh token is required'))
+    }
+
+    const deviceId = localStorage.getItem('deviceId') || ''
+    const headers = {
+      'Device-Id': deviceId
+    }
+
+    return request.post<BaseResult<TokenResponse>>({
+      url: '/api/auth/refresh',
+      params: { refreshToken },
+      headers
+    })
+  }
+
+  // 获取当前用户详情 - 简化后的方法，不再处理 token 刷新逻辑
+  static getCurrentUser() {
+    // 不需要任何额外参数，认证头和刷新逻辑将由 HTTP 拦截器自动处理
+    return request.get<BaseResult<UserDetailResponse>>({
+      url: '/api/admin/user/currentUser'
     })
   }
 }

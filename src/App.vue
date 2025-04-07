@@ -37,9 +37,19 @@
   // 获取用户信息
   const getUserInfo = async () => {
     if (userStore.isLogin) {
-      const userRes = await UserService.getUserInfo()
+      const userRes = await UserService.getCurrentUser()
       if (userRes.code === ApiStatus.success) {
-        userStore.setUserInfo(userRes.data)
+        userStore.setUserInfo({
+          id: userRes.data.id,
+          name: userRes.data.nickName,
+          username: userRes.data.loginName,
+          avatar: userRes.data.icon,
+          email: userRes.data.email,
+          tel: userRes.data.tel,
+          token: userStore.info.accessToken || '',
+          accessToken: userStore.info.accessToken || '',
+          refreshToken: userStore.info.refreshToken || ''
+        })
       }
     }
   }

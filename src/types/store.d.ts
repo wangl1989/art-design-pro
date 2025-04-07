@@ -7,6 +7,9 @@ export interface UserInfo {
   username: string
   avatar: string
   email: string
+  token: string
+  accessToken?: string // JWT 访问令牌
+  refreshToken?: string // JWT 刷新令牌
 }
 
 // 系统主题样式（light | dark）

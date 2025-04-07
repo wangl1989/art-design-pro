@@ -63,6 +63,15 @@
                 autocomplete="off"
               />
             </el-form-item>
+            <el-form-item prop="captcha" class="input-wrap captcha-wrap">
+              <el-input
+                :placeholder="$t('login.placeholder[2]')"
+                size="large"
+                v-model.trim="formData.captcha"
+                @keyup.enter="handleSubmit"
+              />
+              <img :src="captchaSrc" @click="refreshCaptcha" class="captcha-img" alt="captcha" />
+            </el-form-item>
             <div class="drag-verify">
               <div class="drag-verify-content" :class="{ error: !isPassing && isClickPass }">
                 <!-- :background="isDark ? '#181818' : '#eee'" -->
@@ -80,7 +89,7 @@
                 />
               </div>
               <p class="error-text" :class="{ 'show-error-text': !isPassing && isClickPass }">{{
-                $t('login.placeholder[2]')
+                $t('login.placeholder[3]')
               }}</p>
             </div>
 
@@ -127,11 +136,17 @@
   import { getCssVariable } from '@/utils/colors'
   import { languageOptions } from '@/language'
   import { LanguageEnum, SystemThemeEnum } from '@/enums/appEnum'
+  import { UserService } from '@/api/usersApi'
+  // 切换主题
+  import { useTheme } from '@/composables/useTheme'
   import { useI18n } from 'vue-i18n'
+  import { useWindowSize } from '@vueuse/core'
 
   const { t } = useI18n()
   import { useSettingStore } from '@/store/modules/setting'
   import type { FormInstance, FormRules } from 'element-plus'
+  import { onMounted } from 'vue'
+  import FingerprintJS from '@fingerprintjs/fingerprintjs' // 导入 FingerprintJS
 
   const userStore = useUserStore()
   const router = useRouter()
@@ -143,14 +158,18 @@
   const formData = reactive({
     username: AppConfig.systemInfo.login.username,
     password: AppConfig.systemInfo.login.password,
-    rememberPassword: true
+    rememberPassword: true,
+    captcha: ''
   })
 
   const rules = computed<FormRules>(() => ({
     username: [{ required: true, message: t('login.placeholder[0]'), trigger: 'blur' }],
-    password: [{ required: true, message: t('login.placeholder[1]'), trigger: 'blur' }]
+    password: [{ required: true, message: t('login.placeholder[1]'), trigger: 'blur' }],
+    captcha: [{ required: true, message: t('login.placeholder[2]'), trigger: 'blur' }]
   }))
 
+  const captchaSrc = ref('')
+  const captchaKey = ref('')
   const loading = ref(false)
   const { width } = useWindowSize()
 
@@ -164,51 +183,95 @@
 
     await formRef.value.validate(async (valid) => {
       if (valid) {
+        if (!formData.captcha) {
+          ElMessage.error(t('login.rule[5]'))
+          return
+        }
+
         if (!isPassing.value) {
           isClickPass.value = true
           return
         }
-
         loading.value = true
-
-        // 延时辅助函数
-        const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+        // Prepare body and headers separately
+        const bodyParams = {
+          username: formData.username,
+          password: formData.password,
+          captcha: formData.captcha
+        }
+        const key = captchaKey.value
+        const deviceId = localStorage.getItem('deviceId') || ''
 
         try {
-          const res = await UserService.login({
-            body: JSON.stringify({
-              username: formData.username,
-              password: formData.password
-            })
-          })
+          const res = await UserService.login(bodyParams, key, deviceId)
+          if (res.code === ApiStatus.success) {
+            const user = res.data // Assuming data includes user details and token
+            if (user) {
+              // 保存登录状态和token信息
+              userStore.setAccessToken(user.accessToken, user.refreshToken)
 
-          if (res.code === ApiStatus.success && res.data) {
-            // 设置 token
-            userStore.setToken(res.data.accessToken)
-
-            // 获取用户信息
-            const userRes = await UserService.getUserInfo()
-            if (userRes.code === ApiStatus.success) {
-              userStore.setUserInfo(userRes.data)
+              // 获取用户详细信息
+              await fetchUserDetailAndComplete()
+            } else {
+              ElMessage.error(res.message || '登录成功但未收到用户信息')
+              refreshCaptcha()
             }
-
-            // 设置登录状态
-            userStore.setLoginStatus(true)
-            // 延时辅助函数
-            await delay(1000)
-            // 登录成功提示
-            showLoginSuccessNotice()
-            // 跳转首页
-            router.push(HOME_PAGE)
           } else {
-            ElMessage.error(res.message)
+            ElMessage.error(res.message || '登录失败')
+            refreshCaptcha()
           }
+        } catch (error) {
+          console.error('Login error:', error)
+          ElMessage.error('登录请求失败')
+          refreshCaptcha()
         } finally {
-          await delay(1000)
           loading.value = false
         }
       }
     })
+  }
+
+  // 获取用户详情并完成登录流程
+  async function fetchUserDetailAndComplete() {
+    loading.value = true // 继续显示加载状态
+
+    try {
+      // 使用 UserService.getCurrentUser 方法获取当前用户详情
+      const userDetailRes = await UserService.getCurrentUser()
+
+      if (userDetailRes.code === ApiStatus.success && userDetailRes.data) {
+        // 保存用户详细信息
+        const userData = userDetailRes.data
+        // 确保数据符合UserInfo类型或进行必要的适配
+        userStore.setUserInfo({
+          id: userData.id,
+          name: userData.nickName,
+          username: userData.loginName,
+          avatar: userData.icon,
+          email: userData.email,
+          tel: userData.tel,
+          // 如果缺少token字段，可以从store中获取当前保存的token
+          token: userStore.info.accessToken || '',
+          accessToken: userStore.info.accessToken || '',
+          refreshToken: userStore.info.refreshToken || ''
+        })
+        userStore.setLoginStatus(true)
+        showLoginSuccessNotice()
+        router.push(HOME_PAGE)
+      } else {
+        // 获取用户信息失败视为登录流程失败
+        ElMessage.error(userDetailRes.message || '获取用户信息失败')
+        userStore.logOut() // 登出
+        refreshCaptcha()
+      }
+    } catch (error) {
+      console.error('获取用户详情错误:', error)
+      ElMessage.error('处理登录信息时发生错误，请重试')
+      userStore.logOut() // 发生任何严重错误都应登出
+      refreshCaptcha()
+    } finally {
+      loading.value = false // 结束加载
+    }
   }
 
   // 登录成功提示
@@ -234,16 +297,92 @@
     userStore.setLanguage(lang)
   }
 
-  // 切换主题
-  import { useTheme } from '@/composables/useTheme'
-  import { UserService } from '@/api/usersApi'
-
   const toggleTheme = () => {
     let { LIGHT, DARK } = SystemThemeEnum
     useTheme().switchThemeStyles(useSettingStore().systemThemeType === LIGHT ? DARK : LIGHT)
   }
+
+  // 获取验证码
+  const refreshCaptcha = async () => {
+    try {
+      loading.value = true
+      // 使用 UserService 获取验证码
+      const response = await UserService.getCaptcha()
+
+      // 假设 BaseResult 结构是 { code, data, message }
+      // 并且 data 符合 CaptchaData 接口
+      const { code, data, message } = response
+
+      if (code === ApiStatus.success && data) {
+        // 将 Base64 字符串构造成 Data URI
+        captchaSrc.value = `data:image/png;base64,${data.image}`
+        captchaKey.value = data.key
+        formData.captcha = '' // 重置验证码输入框
+      } else {
+        ElMessage.error(message || '获取验证码失败')
+        captchaSrc.value = '' // 清空图片
+        captchaKey.value = ''
+      }
+    } catch (error) {
+      console.error('获取验证码错误:', error)
+      ElMessage.error('获取验证码时发生错误')
+      captchaSrc.value = '' // 清空图片
+      captchaKey.value = ''
+    } finally {
+      loading.value = false // 结束加载状态
+    }
+  }
+
+  // --- 修改：使用 FingerprintJS 获取或生成 Device ID ---
+  const getOrGenerateDeviceId = async (): Promise<string> => {
+    const storedDeviceId = localStorage.getItem('deviceId')
+    if (storedDeviceId) {
+      return storedDeviceId
+    } else {
+      try {
+        // 加载 FingerprintJS 代理
+        const fp = await FingerprintJS.load()
+        // 获取访问者 ID
+        const result = await fp.get()
+        const visitorId = result.visitorId
+        localStorage.setItem('deviceId', visitorId)
+        return visitorId
+      } catch (error) {
+        console.error('FingerprintJS error:', error)
+        // FingerprintJS 出错时的回退策略
+        const fallbackId = `fallback-${Date.now()}-${Math.random().toString(36).substring(2)}`
+        localStorage.setItem('deviceId', fallbackId)
+        return fallbackId
+      }
+    }
+  }
+  // --- 结束修改 ---
+
+  // 组件挂载时获取初始验证码并确保 deviceId 存在 (修改为异步)
+  onMounted(async () => {
+    await getOrGenerateDeviceId() // 等待 deviceId 生成或获取完成
+    refreshCaptcha() // 然后再获取验证码
+  })
 </script>
 
 <style lang="scss" scoped>
   @use './index';
+
+  // 添加验证码相关样式
+  .captcha-wrap {
+    display: flex;
+    align-items: center;
+
+    .el-input {
+      flex: 1;
+      margin-right: 10px;
+    }
+
+    .captcha-img {
+      width: 120px; // 可根据实际图片调整宽度
+      height: 46px; // 与输入框高度一致
+      cursor: pointer;
+      border-radius: var(--el-border-radius-base); // 使用Element Plus变量
+    }
+  }
 </style>

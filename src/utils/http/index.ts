@@ -2,19 +2,30 @@ import axios, { InternalAxiosRequestConfig, AxiosRequestConfig, AxiosResponse } 
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import EmojiText from '../emojo'
+import {
+  getCurrentToken,
+  getDeviceId,
+  getCurrentRefreshToken,
+  isTokenExpiringSoon,
+  isTokenExpired,
+  handleTokenExpired
+} from './token'
+import { ApiService } from '@/api/apiApi'
 
+// 创建axios实例
 const axiosInstance = axios.create({
   timeout: 15000, // 请求超时时间(毫秒)
   baseURL: import.meta.env.VITE_API_URL, // API地址
   withCredentials: true, // 异步请求携带cookie
   transformRequest: [(data) => JSON.stringify(data)], // 请求数据转换为 JSON 字符串
-  validateStatus: (status) => status >= 200 && status < 300, // 只接受 2xx 的状态码
+  validateStatus: (status) => status >= 200 && status < 700, // 只接受 2xx 的状态码
   headers: {
     get: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
     post: { 'Content-Type': 'application/json;charset=utf-8' }
   },
   transformResponse: [
     (data, headers) => {
+      // 响应数据转换
       const contentType = headers['content-type']
       if (contentType && contentType.includes('application/json')) {
         try {
@@ -28,19 +39,71 @@ const axiosInstance = axios.create({
   ]
 })
 
-// 请求拦截器
-axiosInstance.interceptors.request.use(
-  (request: InternalAxiosRequestConfig) => {
-    const { accessToken } = useUserStore()
+// 存储等待刷新 token 的请求队列
+let refreshingTokenPromise: Promise<any> | null = null
 
-    // 如果 token 存在，则设置请求头
-    if (accessToken) {
-      request.headers.set({
-        'Content-Type': 'application/json',
-        Authorization: accessToken
-      })
+// 请求刷新 token 的函数 - 修改函数名避免与参数名冲突
+async function doRefreshToken(refreshTokenStr: string) {
+  try {
+    const response = await ApiService.refreshToken(refreshTokenStr)
+    const result = response.data
+    if (result.code === 200 && result.data) {
+      // 更新 token
+      const userStore = useUserStore()
+      userStore.setAccessToken(result.data.accessToken, result.data.refreshToken)
+      return result.data.accessToken
+    } else {
+      throw new Error(result.message || '刷新令牌失败')
+    }
+  } catch (error) {
+    handleTokenExpired('令牌刷新失败，请重新登录')
+    throw error
+  }
+}
+
+// 处理请求拦截
+axiosInstance.interceptors.request.use(
+  async (request: InternalAxiosRequestConfig) => {
+    // 设置 Device-Id
+    const deviceId = getDeviceId()
+    if (deviceId) {
+      request.headers.set('Device-Id', deviceId)
     }
 
+    // 检查是否需要 token
+    const token = getCurrentToken()
+    if (token) {
+      // 如果 token 即将过期且有刷新令牌，尝试刷新
+      const refreshToken = getCurrentRefreshToken()
+      const needsRefresh = isTokenExpiringSoon(token)
+
+      if (needsRefresh && refreshToken) {
+        if (!refreshingTokenPromise) {
+          // 修改函数调用，使用新的函数名
+          refreshingTokenPromise = doRefreshToken(refreshToken).finally(() => {
+            refreshingTokenPromise = null
+          })
+        }
+
+        try {
+          // 等待 token 刷新完成
+          const newToken = await refreshingTokenPromise
+          request.headers.set('Authorization', `Bearer ${newToken}`)
+        } catch (error) {
+          // 如果刷新失败但旧 token 尚未完全过期，仍继续使用旧的
+          if (!isTokenExpired(token)) {
+            request.headers.set('Authorization', `Bearer ${token}`)
+          } else {
+            throw error // 如果已过期，则抛出错误，中断请求
+          }
+        }
+      } else {
+        // token 状态正常，直接使用
+        request.headers.set('Authorization', `Bearer ${token}`)
+      }
+    }
+
+    console.log('Request headers:', request.headers)
     return request // 返回修改后的配置
   },
   (error) => {
@@ -56,6 +119,14 @@ axiosInstance.interceptors.response.use(
     if (axios.isCancel(error)) {
       console.log('repeated request: ' + error.message)
     } else {
+      // 处理 401 未授权错误
+      if (error.response && error.response.status === 401) {
+        // Token 无效或已过期
+        handleTokenExpired('登录已过期，请重新登录')
+        return Promise.reject(error)
+      }
+
+      // 处理其他错误
       const errorMessage = error.response?.data.message
       ElMessage.error(
         errorMessage
@@ -77,7 +148,7 @@ async function request<T = any>(config: AxiosRequestConfig): Promise<T> {
       config.params = undefined // 使用 undefined 而不是空对象
     }
   }
-
+  console.log('After modification:', config.headers)
   try {
     const res = await axiosInstance.request<T>({ ...config })
     return res.data

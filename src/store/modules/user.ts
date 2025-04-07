@@ -95,13 +95,14 @@ export const useUserStore = defineStore({
     setLockPassword(password: string) {
       this.lockPassword = password
     },
-    setToken(accessToken: string, refreshToken?: string) {
-      this.accessToken = accessToken
+    // 设置 access token 和 refresh token
+    setAccessToken(accessToken: string, refreshToken?: string) {
+      if (!this.info) this.info = {}
+      this.info.accessToken = accessToken
       if (refreshToken) {
-        this.refreshToken = refreshToken
+        this.info.refreshToken = refreshToken
       }
-      sessionStorage.setItem('accessToken', accessToken)
-      this.saveUserData()
+      this.saveUserData() // 保存到持久化存储
     },
     logOut() {
       setTimeout(() => {

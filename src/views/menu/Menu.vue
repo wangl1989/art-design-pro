@@ -30,7 +30,7 @@
                 <el-button size="small" type="danger" @click="deleteAuth()">删除</el-button>
               </div>
               <template #reference>
-                <el-button class="small-btn">{{ item.title }}</el-button>
+                <el-button class="small-btn">{{ item.permissionName }}</el-button>
               </template>
             </el-popover>
           </template>

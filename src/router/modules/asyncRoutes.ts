@@ -322,13 +322,15 @@ export const asyncRoutes: MenuListType[] = [
           authList: [
             {
               id: 2021,
-              title: '新增',
-              auth_mark: 'add'
+              permissionName: '新增',
+              permissionCode: 'add',
+              permissionType: 3
             },
             {
               id: 2022,
-              title: '编辑',
-              auth_mark: 'edit'
+              permissionName: '编辑',
+              permissionCode: 'edit',
+              permissionType: 3
             }
           ]
         }
@@ -366,8 +368,9 @@ export const asyncRoutes: MenuListType[] = [
           authList: [
             {
               id: 2010,
-              title: '发布',
-              auth_mark: 'article/article-publish/add'
+              permissionName: '发布',
+              permissionCode: 'article/article-publish/add',
+              permissionType: 3
             }
           ]
         }
@@ -452,18 +455,21 @@ export const asyncRoutes: MenuListType[] = [
           authList: [
             {
               id: 4011,
-              title: '新增',
-              auth_mark: 'add'
+              permissionName: '新增',
+              permissionCode: 'add',
+              permissionType: 3
             },
             {
               id: 4012,
-              title: '编辑',
-              auth_mark: 'edit'
+              permissionName: '编辑',
+              permissionCode: 'edit',
+              permissionType: 3
             },
             {
               id: 4013,
-              title: '删除',
-              auth_mark: 'delete'
+              permissionName: '删除',
+              permissionCode: 'delete',
+              permissionType: 3
             }
           ]
         }
@@ -481,18 +487,21 @@ export const asyncRoutes: MenuListType[] = [
           authList: [
             {
               id: 4111,
-              title: '新增',
-              auth_mark: 'add'
+              permissionName: '新增',
+              permissionCode: 'add',
+              permissionType: 3
             },
             {
               id: 4112,
-              title: '编辑',
-              auth_mark: 'edit'
+              permissionName: '编辑',
+              permissionCode: 'edit',
+              permissionType: 3
             },
             {
               id: 4113,
-              title: '删除',
-              auth_mark: 'delete'
+              permissionName: '删除',
+              permissionCode: 'delete',
+              permissionType: 3
             }
           ]
         }

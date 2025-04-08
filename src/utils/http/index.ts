@@ -51,7 +51,7 @@ async function doRefreshToken(refreshTokenStr: string) {
     const response = await axios({
       method: 'post',
       url: `${baseURL}/api/auth/refresh`,
-      params: { refreshToken: refreshTokenStr },
+      data: { refreshToken: refreshTokenStr },
       headers: {
         'Content-Type': 'application/json',
         'Device-Id': deviceId

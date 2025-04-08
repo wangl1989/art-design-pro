@@ -1,10 +1,6 @@
 /**
  * 登录相关模型定义
  */
-
-/**
- * 登录参数接口
- */
 export interface LoginParams {
   username?: string
   password?: string

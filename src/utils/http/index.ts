@@ -114,8 +114,6 @@ axiosInstance.interceptors.request.use(
         request.headers.set('Authorization', `Bearer ${token}`)
       }
     }
-
-    console.log('Request headers:', request.headers)
     return request // 返回修改后的配置
   },
   (error) => {
@@ -160,7 +158,6 @@ async function request<T = any>(config: AxiosRequestConfig): Promise<T> {
       config.params = undefined // 使用 undefined 而不是空对象
     }
   }
-  console.log('After modification:', config.headers)
   try {
     const res = await axiosInstance.request<T>({ ...config })
     return res.data

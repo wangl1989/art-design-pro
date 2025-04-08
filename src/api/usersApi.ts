@@ -1,7 +1,7 @@
 import request from '@/utils/http'
 import { BaseResult } from '@/types/axios'
 import { CaptchaData, LoginParams, TokenResponse } from './model/loginModel'
-import { UserDetailResponse } from './model/userModel' // 确保导入 UserDetailResponse
+import { UserDetailResponse, UserListParams, UserListResponse } from './model/userModel'
 
 export class UserService {
   // 登录 - 接收 body 和 header 值
@@ -54,6 +54,14 @@ export class UserService {
     // 不需要任何额外参数，认证头和刷新逻辑将由 HTTP 拦截器自动处理
     return request.get<BaseResult<UserDetailResponse>>({
       url: '/api/admin/user/currentUser'
+    })
+  }
+
+  // 获取用户列表（分页）
+  static getUserList(params: UserListParams) {
+    return request.get<UserListResponse>({
+      url: '/api/admin/user/list',
+      params
     })
   }
 }

@@ -35,6 +35,7 @@
               <el-checkbox
                 v-for="(item, index) in colSelect"
                 :label="item"
+                :value="item"
                 :key="item"
                 @change="changeColumn($event, index)"
               />

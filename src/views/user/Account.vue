@@ -10,20 +10,13 @@
       <template #top>
         <el-form :model="searchForm" ref="searchFormRef" label-width="82px">
           <el-row :gutter="20">
-            <form-input label="用户名" prop="name" v-model="searchForm.name" />
-            <form-input label="手机号" prop="phone" v-model="searchForm.phone" />
-            <form-input label="邮箱" prop="email" v-model="searchForm.email" />
-            <form-input label="账号" prop="account" v-model="searchForm.account" />
-          </el-row>
-          <el-row :gutter="20">
-            <form-input label="用户ID" prop="id" v-model="searchForm.id" />
-            <form-select label="性别" prop="sex" v-model="searchForm.sex" :options="sexOptions" />
-            <form-select
-              label="会员等级"
-              prop="level"
-              v-model="searchForm.level"
-              :options="levelOptions"
+            <form-input
+              label="登录账号"
+              prop="loginName"
+              v-model="searchForm.loginName as string"
             />
+            <form-input label="手机号" prop="tel" v-model="searchForm.tel as string" />
+            <form-input label="邮箱" prop="email" v-model="searchForm.email as string" />
           </el-row>
         </el-form>
       </template>
@@ -32,7 +25,16 @@
       </template>
     </table-bar>
 
-    <art-table :data="tableData" selection :currentPage="1" :pageSize="10" :total="50">
+    <art-table
+      :data="tableData"
+      selection
+      :currentPage="pagination.current"
+      :pageSize="pagination.size"
+      :total="pagination.total"
+      @page-change="handlePageChange"
+      @size-change="handleSizeChange"
+      v-loading="loading"
+    >
       <template #default>
         <el-table-column
           label="用户名"
@@ -42,38 +44,33 @@
           v-if="columns[0].show"
         >
           <div class="user" style="display: flex; align-items: center">
-            <img class="avatar" :src="scope.row.avatar" />
+            <img class="avatar" :src="formatAvatar(scope.row.icon, scope.row.id)" />
             <div>
-              <p class="user-name">{{ scope.row.username }}</p>
+              <p class="user-name">{{ scope.row.nickName }}</p>
               <p class="email">{{ scope.row.email }}</p>
             </div>
           </div>
         </el-table-column>
-        <el-table-column label="手机号" prop="mobile" v-if="columns[1].show" />
-        <el-table-column label="性别" prop="sex" #default="scope" sortable v-if="columns[2].show">
-          {{ scope.row.sex === 1 ? '男' : '女' }}
+        <el-table-column label="手机号" prop="tel" v-if="columns[1].show" />
+        <el-table-column label="登录账号" prop="loginName" v-if="columns[2].show" />
+        <el-table-column label="角色" prop="roles" #default="scope" v-if="columns[3].show">
+          <el-tag v-for="role in scope.row.roles" :key="role.id" class="role-tag">
+            {{ role.name }}
+          </el-tag>
+          <span v-if="!scope.row.roles || scope.row.roles.length === 0">-</span>
         </el-table-column>
-        <el-table-column label="部门" prop="dep" v-if="columns[3].show" />
-        <el-table-column
-          label="状态"
-          prop="status"
-          :filters="[
-            { text: '在线', value: '1' },
-            { text: '离线', value: '2' },
-            { text: '异常', value: '3' },
-            { text: '注销', value: '4' }
-          ]"
-          :filter-method="filterTag"
-          filter-placement="bottom-end"
-          v-if="columns[4].show"
-        >
+        <el-table-column label="状态" prop="locked" v-if="columns[4].show">
           <template #default="scope">
-            <el-tag :type="getTagType(scope.row.status)">
-              {{ buildTagText(scope.row.status) }}</el-tag
-            >
+            <el-tag :type="scope.row.locked ? 'danger' : 'success'">
+              {{ scope.row.locked ? '锁定' : '正常' }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="创建日期" prop="create_time" sortable v-if="columns[5].show" />
+        <el-table-column label="创建日期" prop="createDate" sortable v-if="columns[5].show">
+          <template #default="scope">
+            {{ formatDate(scope.row.createDate) }}
+          </template>
+        </el-table-column>
         <el-table-column fixed="right" label="操作" width="150px">
           <template #default="scope">
             <button-table type="edit" @click="showDialog('edit', scope.row)" />
@@ -120,13 +117,16 @@
 </template>
 
 <script setup lang="ts">
-  import { ACCOUNT_TABLE_DATA } from '@/mock/temp/formData'
   import { FormInstance } from 'element-plus'
   import { ElMessageBox, ElMessage } from 'element-plus'
   import type { FormRules } from 'element-plus'
+  import { UserService } from '@/api/usersApi'
+  import { UserListParams, UserRecord } from '@/api/model/userModel'
+  import { onMounted } from 'vue'
 
   const dialogType = ref('add')
   const dialogVisible = ref(false)
+  const loading = ref(false)
 
   const formData = reactive({
     username: '',
@@ -135,63 +135,93 @@
     dep: ''
   })
 
-  const sexOptions = [
-    {
-      value: '男',
-      label: '男'
-    },
-    {
-      value: '女',
-      label: '女'
-    }
-  ]
-  const levelOptions = [
-    {
-      value: '1',
-      label: '普通用户'
-    },
-    {
-      value: '2',
-      label: ' VIP'
-    }
-  ]
-
   const columns = reactive([
     { name: '用户名', show: true },
     { name: '手机号', show: true },
-    { name: '性别', show: true },
-    { name: '部门', show: true },
+    { name: '登录账号', show: true },
+    { name: '角色', show: true },
     { name: '状态', show: true },
     { name: '创建日期', show: true }
   ])
 
   const searchFormRef = ref<FormInstance>()
-  const searchForm = reactive({
-    name: '',
-    phone: '',
+  const searchForm = reactive<UserListParams>({
+    loginName: '',
+    tel: '',
     email: '',
-    account: '',
-    id: '',
-    sex: '',
-    level: ''
+    page: 1,
+    limit: 10
   })
 
   const resetForm = (formEl: FormInstance | undefined) => {
     if (!formEl) return
     formEl.resetFields()
+    searchForm.page = 1
+    searchForm.limit = 10
+    loadUserData()
   }
 
-  const tableData = ACCOUNT_TABLE_DATA
+  // 表格数据
+  const tableData = ref<UserRecord[]>([])
 
-  const showDialog = (type: string, row?: any) => {
+  // 分页信息
+  const pagination = reactive({
+    current: 1,
+    size: 10,
+    total: 0,
+    pages: 0
+  })
+
+  // 加载用户数据
+  const loadUserData = async () => {
+    loading.value = true
+    try {
+      const response = await UserService.getUserList(searchForm)
+      if (response.success) {
+        tableData.value = response.data.records
+        pagination.total = response.data.total
+        pagination.current = response.data.current
+        pagination.size = response.data.size
+        pagination.pages = response.data.pages
+      } else {
+        ElMessage.error(response.message || '获取用户列表失败')
+      }
+    } catch (error) {
+      console.error('获取用户列表失败:', error)
+      ElMessage.error('获取用户列表时发生错误')
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 处理头像URL
+  const formatAvatar = (icon: string, userId: number) => {
+    if (!icon || icon === '' || !icon.startsWith('http')) {
+      return `https://api.dicebear.com/9.x/adventurer/svg?seed=${userId}`
+    }
+    return icon
+  }
+
+  // 格式化日期
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-'
+    try {
+      const date = new Date(dateStr)
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+    } catch (error) {
+      console.error('格式化日期失败:', error)
+      return dateStr
+    }
+  }
+
+  const showDialog = (type: string, row?: UserRecord) => {
     dialogVisible.value = true
     dialogType.value = type
 
     if (type === 'edit' && row) {
-      formData.username = row.username
-      formData.phone = row.mobile
-      formData.sex = row.sex === 1 ? '男' : '女'
-      formData.dep = row.dep
+      formData.username = row.nickName
+      formData.phone = row.tel
+      // 其他字段也可以根据需要添加
     } else {
       formData.username = ''
       formData.phone = ''
@@ -207,46 +237,30 @@
       type: 'error'
     }).then(() => {
       ElMessage.success('注销成功')
+      loadUserData() // 重新加载数据
     })
   }
 
-  const search = () => {}
+  const search = () => {
+    searchForm.page = 1 // 搜索时重置为第一页
+    loadUserData()
+  }
 
   const changeColumn = (list: any) => {
     columns.values = list
   }
 
-  const filterTag = (value: string, row: any) => {
-    return row.status === value
+  // 处理分页变化
+  const handlePageChange = (page: number) => {
+    searchForm.page = page
+    loadUserData()
   }
 
-  const getTagType = (status: string) => {
-    switch (status) {
-      case '1':
-        return 'success'
-      case '2':
-        return 'info'
-      case '3':
-        return 'warning'
-      case '4':
-        return 'danger'
-      default:
-        return 'info'
-    }
-  }
-
-  const buildTagText = (status: string) => {
-    let text = ''
-    if (status === '1') {
-      text = '在线'
-    } else if (status === '2') {
-      text = '离线'
-    } else if (status === '3') {
-      text = '异常'
-    } else if (status === '4') {
-      text = '注销'
-    }
-    return text
+  // 处理每页显示数量变化
+  const handleSizeChange = (size: number) => {
+    searchForm.limit = size
+    searchForm.page = 1 // 切换每页数量时重置为第一页
+    loadUserData()
   }
 
   const rules = reactive<FormRules>({
@@ -271,9 +285,15 @@
       if (valid) {
         ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
         dialogVisible.value = false
+        loadUserData() // 操作完成后重新加载数据
       }
     })
   }
+
+  // 组件挂载时加载数据
+  onMounted(() => {
+    loadUserData()
+  })
 </script>
 
 <style lang="scss" scoped>
@@ -296,6 +316,11 @@
           color: var(--art-text-gray-800);
         }
       }
+    }
+
+    .role-tag {
+      margin-right: 5px;
+      margin-bottom: 5px;
     }
   }
 </style>

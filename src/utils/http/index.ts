@@ -10,7 +10,6 @@ import {
   isTokenExpired,
   handleTokenExpired
 } from '@/utils/http/token'
-import { ApiService } from '@/api/apiApi'
 
 // 创建axios实例
 const axiosInstance = axios.create({
@@ -45,7 +44,19 @@ let refreshingTokenPromise: Promise<any> | null = null
 // 请求刷新 token 的函数 - 修改函数名避免与参数名冲突
 async function doRefreshToken(refreshTokenStr: string) {
   try {
-    const response = await ApiService.refreshToken(refreshTokenStr)
+    // 替换为直接使用axios的原始请求
+    const deviceId = localStorage.getItem('deviceId') || ''
+    const baseURL = import.meta.env.VITE_API_URL // 获取API基础URL
+    // 创建一个独立的axios实例，避免循环依赖
+    const response = await axios({
+      method: 'post',
+      url: `${baseURL}/api/auth/refresh`,
+      params: { refreshToken: refreshTokenStr },
+      headers: {
+        'Content-Type': 'application/json',
+        'Device-Id': deviceId
+      }
+    })
     const result = response.data
     if (result.code === 200 && result.data) {
       // 更新 token
@@ -56,6 +67,7 @@ async function doRefreshToken(refreshTokenStr: string) {
       throw new Error(result.message || '刷新令牌失败')
     }
   } catch (error) {
+    console.error('Token刷新失败:', error)
     handleTokenExpired('令牌刷新失败，请重新登录')
     throw error
   }

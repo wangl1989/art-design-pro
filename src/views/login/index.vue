@@ -242,6 +242,9 @@
       if (userDetailRes.code === ApiStatus.success && userDetailRes.data) {
         // 保存用户详细信息
         const userData = userDetailRes.data
+        if (!userData.icon || userData.icon === '' || !userData.icon.startsWith('http')) {
+          userData.icon = `https://api.dicebear.com/9.x/adventurer/svg?seed=${userData.id}`
+        }
         // 确保数据符合UserInfo类型或进行必要的适配
         userStore.setUserInfo({
           id: userData.id,

@@ -38,6 +38,9 @@
   const getUserInfo = async () => {
     if (userStore.isLogin) {
       const userRes = await UserService.getCurrentUser()
+      if (!userRes.data.icon || userRes.data.icon === '' || !userRes.data.icon.startsWith('http')) {
+        userRes.data.icon = `https://api.dicebear.com/9.x/adventurer/svg?seed=${userRes.data.id}`
+      }
       if (userRes.code === ApiStatus.success) {
         userStore.setUserInfo({
           id: userRes.data.id,

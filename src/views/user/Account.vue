@@ -84,32 +84,49 @@
       v-model="dialogVisible"
       :title="dialogType === 'add' ? '添加用户' : '编辑用户'"
       width="30%"
+      destroy-on-close
     >
-      <el-form ref="formRef" :model="formData" :rules="rules" label-width="80px">
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="formData.username" />
-        </el-form-item>
-        <el-form-item label="手机号" prop="phone">
-          <el-input v-model="formData.phone" />
-        </el-form-item>
-        <el-form-item label="性别" prop="sex">
-          <el-select v-model="formData.sex">
-            <el-option label="男" value="男" />
-            <el-option label="女" value="女" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="部门" prop="dep">
-          <el-select v-model="formData.dep">
-            <el-option label="董事会部" :value="1" />
-            <el-option label="市场部" :value="2" />
-            <el-option label="技术部" :value="3" />
-          </el-select>
-        </el-form-item>
-      </el-form>
+      <div v-if="dialogType === 'add'" class="info-alert">
+        <div class="info-icon">
+          <i class="iconfont-sys" v-html="'&#xe71d;'"></i>
+        </div>
+        <div class="info-content">
+          <p>注意：新增的用户默认密码是：123456</p>
+        </div>
+      </div>
+      <div v-loading="formLoading">
+        <el-form ref="formRef" :model="formData" :rules="rules" label-width="80px">
+          <el-form-item label="用户名" prop="nickName">
+            <el-input v-model="formData.nickName" />
+          </el-form-item>
+          <el-form-item label="登录账号" prop="loginName">
+            <el-input v-model="formData.loginName" :disabled="dialogType === 'edit'" />
+            <div v-if="dialogType === 'add'" class="form-tip">
+              登录名规则: 必须以英文字母开头，只能包含字母、数字、下划线，最小3个字符，最大10个字符
+            </div>
+          </el-form-item>
+          <el-form-item label="手机号" prop="tel">
+            <el-input v-model="formData.tel" />
+          </el-form-item>
+          <el-form-item label="邮箱" prop="email">
+            <el-input v-model="formData.email" />
+          </el-form-item>
+          <el-form-item label="角色" prop="roles">
+            <el-checkbox-group v-model="formData.roleIds">
+              <el-checkbox v-for="role in roleOptions" :key="role.id" :value="role.id">
+                {{ role.name }}
+              </el-checkbox>
+            </el-checkbox-group>
+          </el-form-item>
+          <el-form-item label="备注" prop="remarks">
+            <el-input v-model="formData.remarks" type="textarea" :rows="3" />
+          </el-form-item>
+        </el-form>
+      </div>
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit">提交</el-button>
+          <el-button type="primary" @click="handleSubmit" :loading="submitLoading">提交</el-button>
         </div>
       </template>
     </el-dialog>
@@ -122,18 +139,46 @@
   import type { FormRules } from 'element-plus'
   import { UserService } from '@/api/usersApi'
   import { UserListParams, UserRecord } from '@/api/model/userModel'
+  import { RoleService } from '@/api/roleApi'
+  import { Role } from '@/api/model/roleModel'
+  import { ApiStatus } from '@/utils/http/status'
   import { onMounted } from 'vue'
 
   const dialogType = ref('add')
   const dialogVisible = ref(false)
   const loading = ref(false)
+  const formLoading = ref(false)
+  const submitLoading = ref(false)
 
+  // 表单数据
   const formData = reactive({
-    username: '',
-    phone: '',
-    sex: '',
-    dep: ''
+    id: 0,
+    nickName: '',
+    loginName: '',
+    tel: '',
+    email: '',
+    icon: '',
+    roleIds: [] as number[],
+    remarks: ''
   })
+
+  // 角色选项
+  const roleOptions = ref<Role[]>([])
+
+  // 加载角色选项
+  const loadRoleOptions = async () => {
+    try {
+      const response = await RoleService.getUserAllRoles()
+      if (response.code === ApiStatus.success) {
+        roleOptions.value = response.data
+      } else {
+        ElMessage.error(response.message || '获取角色列表失败')
+      }
+    } catch (error) {
+      console.error('获取角色列表失败:', error)
+      ElMessage.error('获取角色列表时发生错误')
+    }
+  }
 
   const columns = reactive([
     { name: '用户名', show: true },
@@ -194,6 +239,54 @@
     }
   }
 
+  // 加载用户详情
+  const loadUserDetail = async (userId: number) => {
+    if (!userId) {
+      console.error('无效的用户ID:', userId)
+      return
+    }
+
+    formLoading.value = true
+    try {
+      console.log('开始加载用户详情, userId:', userId)
+      const response = await UserService.getUserDetail(userId)
+      console.log('获取到用户详情响应:', response)
+
+      if (response.code === ApiStatus.success && response.data) {
+        const userData = response.data
+        console.log('用户详情数据:', userData)
+
+        // 清空之前的数据
+        resetFormData()
+
+        // 设置表单数据
+        formData.id = userData.id || 0
+        formData.nickName = userData.nickName || ''
+        formData.loginName = userData.loginName || ''
+        formData.tel = userData.tel || ''
+        formData.email = userData.email || ''
+        formData.icon = userData.icon || ''
+        formData.remarks = userData.remarks || ''
+
+        // 设置角色ID列表
+        if (userData.roles && Array.isArray(userData.roles)) {
+          formData.roleIds = userData.roles.map((role) => role.id)
+        } else {
+          formData.roleIds = []
+        }
+
+        console.log('表单数据设置完成:', JSON.stringify(formData))
+      } else {
+        ElMessage.error(response.message || '获取用户详情失败')
+      }
+    } catch (error) {
+      console.error('获取用户详情失败:', error)
+      ElMessage.error('获取用户详情时发生错误')
+    } finally {
+      formLoading.value = false
+    }
+  }
+
   // 处理头像URL
   const formatAvatar = (icon: string, userId: number) => {
     if (!icon || icon === '' || !icon.startsWith('http')) {
@@ -214,20 +307,34 @@
     }
   }
 
-  const showDialog = (type: string, row?: UserRecord) => {
+  const showDialog = async (type: string, row?: UserRecord) => {
+    console.log('showDialog被调用, type:', type, 'row:', row)
     dialogVisible.value = true
     dialogType.value = type
 
+    // 重置表单
+    resetFormData()
+
+    // 加载角色选项
+    await loadRoleOptions()
+
     if (type === 'edit' && row) {
-      formData.username = row.nickName
-      formData.phone = row.tel
-      // 其他字段也可以根据需要添加
-    } else {
-      formData.username = ''
-      formData.phone = ''
-      formData.sex = '男'
-      formData.dep = ''
+      console.log('准备加载用户详情, id:', row.id)
+      // 编辑模式：加载用户详情
+      await loadUserDetail(row.id)
     }
+  }
+
+  // 重置表单数据
+  const resetFormData = () => {
+    formData.id = 0
+    formData.nickName = ''
+    formData.loginName = ''
+    formData.tel = ''
+    formData.email = ''
+    formData.icon = ''
+    formData.roleIds = []
+    formData.remarks = ''
   }
 
   const deleteUser = () => {
@@ -264,16 +371,27 @@
   }
 
   const rules = reactive<FormRules>({
-    username: [
+    nickName: [
       { required: true, message: '请输入用户名', trigger: 'blur' },
       { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
     ],
-    phone: [
+    loginName: [
+      { required: true, message: '请输入登录账号', trigger: 'blur' },
+      { min: 3, max: 10, message: '长度在 3 到 10 个字符', trigger: 'blur' },
+      {
+        pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/,
+        message: '必须以英文字母开头，只能包含字母、数字、下划线',
+        trigger: 'blur'
+      }
+    ],
+    tel: [
       { required: true, message: '请输入手机号', trigger: 'blur' },
       { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
     ],
-    sex: [{ required: true, message: '请选择性别', trigger: 'change' }],
-    dep: [{ required: true, message: '请选择部门', trigger: 'change' }]
+    email: [
+      { required: true, message: '请输入邮箱', trigger: 'blur' },
+      { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+    ]
   })
 
   const formRef = ref<FormInstance>()
@@ -281,11 +399,52 @@
   const handleSubmit = async () => {
     if (!formRef.value) return
 
-    await formRef.value.validate((valid) => {
+    await formRef.value.validate(async (valid) => {
       if (valid) {
-        ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
-        dialogVisible.value = false
-        loadUserData() // 操作完成后重新加载数据
+        submitLoading.value = true
+
+        try {
+          let response
+
+          if (dialogType.value === 'add') {
+            // 构建新增用户的参数
+            const addParams = {
+              loginName: formData.loginName,
+              nickName: formData.nickName,
+              tel: formData.tel,
+              email: formData.email,
+              icon: formData.icon,
+              remarks: formData.remarks,
+              roles: formData.roleIds.map((id) => ({ id }))
+            }
+            response = await UserService.addUser(addParams)
+          } else {
+            // 构建编辑用户的参数
+            const editParams = {
+              id: formData.id,
+              nickName: formData.nickName,
+              tel: formData.tel,
+              email: formData.email,
+              icon: formData.icon,
+              remarks: formData.remarks,
+              roleSet: formData.roleIds.map((id) => ({ id }))
+            }
+            response = await UserService.editUser(editParams)
+          }
+
+          if (response.code === ApiStatus.success) {
+            ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
+            dialogVisible.value = false
+            loadUserData() // 操作完成后重新加载数据
+          } else {
+            ElMessage.error(response.message || '操作失败')
+          }
+        } catch (error) {
+          console.error('保存用户信息失败:', error)
+          ElMessage.error('保存用户信息时发生错误')
+        } finally {
+          submitLoading.value = false
+        }
       }
     })
   }
@@ -321,6 +480,45 @@
     .role-tag {
       margin-right: 5px;
       margin-bottom: 5px;
+    }
+
+    .form-tip {
+      margin-top: 5px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #909399;
+    }
+
+    .info-alert {
+      display: flex;
+      align-items: flex-start;
+      padding: 10px 15px;
+      margin-bottom: 20px;
+      background-color: #e6f7ff;
+      border: 1px solid #91d5ff;
+      border-radius: 4px;
+
+      .info-icon {
+        display: flex;
+        align-items: center;
+        margin-right: 8px;
+
+        i {
+          font-size: 20px;
+          color: #1890ff;
+        }
+      }
+
+      .info-content {
+        flex: 1;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #333;
+
+        p {
+          margin: 0;
+        }
+      }
     }
   }
 </style>

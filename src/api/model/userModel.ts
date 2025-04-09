@@ -47,6 +47,7 @@ export interface UserDetailResponse {
   }>
   delFlag: boolean
   deviceId: string | null
+  remarks?: string | null
 }
 
 /**
@@ -110,4 +111,30 @@ export interface UserListResponse {
   success: boolean
   message: string
   timestamp: number
+}
+
+// 用户编辑参数接口
+export interface EditUserParams {
+  id: number
+  roleSet: Array<{
+    id: number
+  }>
+  email: string
+  tel: string
+  nickName: string
+  icon?: string
+  remarks?: string
+}
+
+// 用户新增参数接口
+export interface AddUserParams {
+  loginName: string // 登录名规则: 必须以英文字母开头，只能包含字母、数字、下划线，最小3个字符，最大10个字符
+  roles: Array<{
+    id: number
+  }>
+  email: string
+  tel: string
+  nickName: string
+  icon?: string
+  remarks?: string
 }

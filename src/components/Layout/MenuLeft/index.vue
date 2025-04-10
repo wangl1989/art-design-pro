@@ -34,7 +34,8 @@
                   v-html="menu.meta.icon"
                   :style="{
                     fontSize: settingStore.dualMenuShowText ? '18px' : '22px',
-                    marginBottom: settingStore.dualMenuShowText ? '5px' : '0'
+                    marginBottom: settingStore.dualMenuShowText ? '5px' : '0',
+                    color: menu.meta.color || ''
                   }"
                 ></i>
                 <span v-if="settingStore.dualMenuShowText">

@@ -7,7 +7,7 @@
     <template #title>
       <i
         class="menu-icon iconfont-sys"
-        :style="{ color: theme?.iconColor }"
+        :style="{ color: item.meta.color || theme?.iconColor }"
         v-html="item.meta.icon"
       ></i>
       <span>{{ formatMenuTitle(item.meta.title) }}</span>
@@ -30,7 +30,11 @@
     :level-item="level + 1"
   >
     <template #title>
-      <i class="menu-icon iconfont-sys" v-html="item.meta.icon"></i>
+      <i
+        class="menu-icon iconfont-sys"
+        :style="{ color: item.meta.color || theme?.iconColor }"
+        v-html="item.meta.icon"
+      ></i>
       <span>{{ formatMenuTitle(item.meta.title) }}</span>
       <div class="badge" v-if="item.meta.showBadge"></div>
     </template>

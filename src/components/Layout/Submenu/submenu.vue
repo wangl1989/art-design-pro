@@ -3,7 +3,7 @@
     <!-- 包含子菜单的项目 -->
     <el-sub-menu v-if="hasChildren(item)" :index="item.path || item.meta.title" :level="level">
       <template #title>
-        <MenuItemIcon :icon="item.meta.icon" :color="theme?.iconColor" />
+        <MenuItemIcon :icon="item.meta.icon" :color="item.meta.color || theme?.iconColor" />
         <span class="menu-name">{{ formatMenuTitle(item.meta.title) }}</span>
         <div v-if="item.meta.showBadge" class="badge" style="right: 35px" />
       </template>
@@ -23,7 +23,7 @@
       :level-item="level + 1"
       @click="goPage(item)"
     >
-      <MenuItemIcon :icon="item.meta.icon" :color="theme?.iconColor" />
+      <MenuItemIcon :icon="item.meta.icon" :color="item.meta.color || theme?.iconColor" />
       <template #title>
         <span class="menu-name">{{ formatMenuTitle(item.meta.title) }}</span>
         <div v-if="item.meta.showBadge" class="badge" />

@@ -4,17 +4,19 @@
       class="select"
       @click="handleClick"
       :style="{ width: props.width }"
-      :class="[size, { 'is-disabled': disabled }, { 'has-icon': selectValue }]"
+      :class="[size, { 'is-disabled': disabled }, { 'has-icon': internalValue }]"
     >
       <div class="icon">
         <i
-          :class="`iconfont-sys ${selectValue}`"
+          :class="`iconfont-sys ${internalValue}`"
           v-show="props.iconType === IconTypeEnum.CLASS_NAME"
+          :style="iconStyle"
         ></i>
         <i
           class="iconfont-sys"
-          v-html="selectValue"
+          v-html="internalValue"
           v-show="props.iconType === IconTypeEnum.UNICODE"
+          :style="iconStyle"
         ></i>
       </div>
       <div class="text"> {{ props.text }} </div>
@@ -55,7 +57,7 @@
   import { IconTypeEnum } from '@/enums/appEnum'
   import { extractIconClasses } from '@/utils/iconfont'
 
-  const emits = defineEmits(['getIcon'])
+  const emit = defineEmits(['update:modelValue'])
 
   const iconsList = extractIconClasses()
 
@@ -83,15 +85,41 @@
     disabled: {
       type: Boolean,
       default: false
+    },
+    modelValue: {
+      type: String,
+      default: ''
+    },
+    iconColor: {
+      type: String,
+      default: null
     }
   })
 
-  const selectValue = ref(props.defaultIcon)
+  const internalValue = ref(props.modelValue || props.defaultIcon)
+
+  const iconStyle = computed(() => {
+    return {
+      color: props.iconColor
+    }
+  })
+
+  watch(
+    () => props.modelValue,
+    (newVal) => {
+      if (newVal !== internalValue.value) {
+        internalValue.value = newVal
+      }
+    },
+    { immediate: true }
+  )
 
   watch(
     () => props.defaultIcon,
-    (newVal) => {
-      selectValue.value = newVal
+    (newDefault) => {
+      if (!props.modelValue && newDefault !== internalValue.value) {
+        internalValue.value = newDefault
+      }
     },
     { immediate: true }
   )
@@ -99,14 +127,17 @@
   const activeName = ref('icons')
   const visible = ref(false)
 
-  const selectorIcon = (icon: any) => {
+  const selectorIcon = (selectedIcon: any) => {
+    let emitValue = ''
+
     if (props.iconType === IconTypeEnum.CLASS_NAME) {
-      selectValue.value = icon.className
-    } else {
-      selectValue.value = icon.unicode
+      emitValue = selectedIcon.className
+    } else if (props.iconType === IconTypeEnum.UNICODE && selectedIcon.unicode) {
+      emitValue = selectedIcon.unicode
     }
+    internalValue.value = emitValue
     visible.value = false
-    emits('getIcon', selectValue.value)
+    emit('update:modelValue', emitValue)
   }
 
   const handleClick = () => {
@@ -116,8 +147,8 @@
   }
 
   const clearIcon = () => {
-    selectValue.value = ''
-    emits('getIcon', selectValue.value)
+    internalValue.value = ''
+    emit('update:modelValue', '')
   }
 </script>
 

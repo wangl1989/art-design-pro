@@ -7,6 +7,7 @@ import { processRoute } from '@/utils/menu'
 import { ElLoading } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { ElMessage } from 'element-plus'
+import { AddMenuParams, EditMenuParams } from '@/api/model/menuModel' // 导入菜单参数接口
 
 // 菜单接口
 export const menuService = {
@@ -57,5 +58,25 @@ export const menuService = {
         closeLoading: () => {}
       }
     }
+  }
+}
+
+export class MenuApiService {
+  // 新增菜单
+  static addMenu(params: AddMenuParams) {
+    // 直接返回 request.post 返回的 Promise
+    return request.post<BaseResult<null>>({
+      url: '/api/admin/menu/add',
+      params
+    })
+  }
+
+  // 编辑菜单
+  static editMenu(params: EditMenuParams) {
+    // 直接返回 request.put 返回的 Promise
+    return request.put<BaseResult<null>>({
+      url: '/api/admin/menu/edit',
+      params
+    })
   }
 }

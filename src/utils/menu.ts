@@ -24,6 +24,12 @@ export const processRoute = (route: MenuListType, parentPath = ''): MenuListType
     path: currentPath,
     component: route.component,
     meta: route.meta ?? {}, // 使用空值合并运算符
+    remarks: route.remarks,
+    parentId: route.parentId,
+    parentIds: route.parentIds,
+    level: route.level,
+    sort: route.sort,
+    updateDate: route.updateDate, // 添加 updateDate 字段
     children: Array.isArray(route.children)
       ? route.children.map((child) => processRoute(child, currentPath))
       : []

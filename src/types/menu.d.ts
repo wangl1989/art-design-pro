@@ -8,9 +8,11 @@ export type MenuListType = {
   level?: number
   sort?: number
   remarks?: string
+  updateDate?: string // 添加更新时间字段
   meta: {
     title: string // 菜单名称
     icon?: string // 菜单图标
+    color?: string | null // 新增 color 字段
     showBadge?: boolean // 是否显示徽标
     showTextBadge?: string // 是否显示新徽标
     isHide?: boolean // 是否在菜单中隐藏

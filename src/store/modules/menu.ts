@@ -18,7 +18,7 @@ export const useMenuStore = defineStore({
     }
   },
   actions: {
-    setMenuList(list: []) {
+    setMenuList(list: MenuListType[]) {
       this.menuList = list
     },
     setMenuWidth(width: string) {

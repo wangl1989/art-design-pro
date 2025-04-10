@@ -30,3 +30,22 @@ export interface PaginationResult<T> extends BaseResult {
   total: number // 总条数
   data: T
 }
+
+/**
+ * 通用分页数据结构
+ */
+export interface PageData<T> {
+  records: T[] // 记录列表
+  total: number // 总记录数
+  size: number // 每页大小
+  current: number // 当前页码
+  pages: number // 总页数
+}
+
+export interface PageResult<T = any> {
+  data: PageData<T>
+  code: number
+  success: boolean
+  message: string
+  timestamp: number
+}

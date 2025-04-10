@@ -1,12 +1,12 @@
 import request from '@/utils/http'
-import { BaseResult } from '@/types/axios'
+import { BaseResult, PageResult } from '@/types/axios'
 import { CaptchaData, LoginParams, TokenResponse } from './model/loginModel'
 import {
   UserDetailResponse,
   UserListParams,
-  UserListResponse,
   EditUserParams,
-  AddUserParams
+  AddUserParams,
+  UserRecord
 } from './model/userModel'
 export class UserService {
   // 登录 - 接收 body 和 header 值
@@ -46,7 +46,7 @@ export class UserService {
 
   // 获取用户列表（分页）
   static getUserList(params: UserListParams) {
-    return request.get<UserListResponse>({
+    return request.get<PageResult<UserRecord>>({
       url: '/api/admin/user/list',
       params
     })

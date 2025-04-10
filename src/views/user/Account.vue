@@ -142,6 +142,7 @@
   import { RoleService } from '@/api/roleApi'
   import { Role } from '@/api/model/roleModel'
   import { ApiStatus } from '@/utils/http/status'
+  import { formatDate } from '@/utils/date'
   import { onMounted } from 'vue'
 
   const dialogType = ref('add')
@@ -293,18 +294,6 @@
       return `https://api.dicebear.com/9.x/adventurer/svg?seed=${userId}`
     }
     return icon
-  }
-
-  // 格式化日期
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '-'
-    try {
-      const date = new Date(dateStr)
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-    } catch (error) {
-      console.error('格式化日期失败:', error)
-      return dateStr
-    }
   }
 
   const showDialog = async (type: string, row?: UserRecord) => {

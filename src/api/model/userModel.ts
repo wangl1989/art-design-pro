@@ -91,28 +91,6 @@ export interface UserRecord {
   }>
 }
 
-/**
- * 分页数据结构
- */
-export interface PageData<T> {
-  records: T[]
-  total: number
-  size: number
-  current: number
-  pages: number
-}
-
-/**
- * 用户列表响应
- */
-export interface UserListResponse {
-  data: PageData<UserRecord>
-  code: number
-  success: boolean
-  message: string
-  timestamp: number
-}
-
 // 用户编辑参数接口
 export interface EditUserParams {
   id: number

@@ -99,6 +99,7 @@ declare module 'vue' {
     MixedMenu: typeof import('./../components/Layout/MixedMenu/index.vue')['default']
     Network: typeof import('./../components/Widgets/Network.vue')['default']
     Notice: typeof import('./../components/Layout/Notice/index.vue')['default']
+    PermissionTree: typeof import('./../components/Permission/PermissionTree.vue')['default']
     ProgressCard: typeof import('./../components/Widgets/Cards/ProgressCard.vue')['default']
     RadarChart: typeof import('./../components/Widgets/Charts/RadarChart.vue')['default']
     RingChart: typeof import('./../components/Widgets/Charts/RingChart.vue')['default']

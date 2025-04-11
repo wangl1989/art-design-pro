@@ -1,10 +1,9 @@
 <template>
   <div class="page-content">
     <el-row :gutter="20" style="margin-left: 15px">
-      <el-button type="primary" @click="showModel('menu', null, true)" v-ripple>
-        新增主菜单
-      </el-button>
-      <el-button v-auth="'add'" @click="showModel('menu', null, true)" v-ripple>添加菜单</el-button>
+      <el-button type="primary" @click="showModel('menu', null, true)" v-ripple
+        >新增主菜单</el-button
+      >
     </el-row>
 
     <art-table :data="tableData">
@@ -52,7 +51,7 @@
 
         <el-table-column fixed="right" label="操作" width="180">
           <template #default="scope">
-            <button-table type="add" @click="showModel('menu')" />
+            <button-table type="add" @click="showModel('menu', null, false, scope.row)" />
             <button-table type="edit" @click="showDialog('edit', scope.row)" />
             <button-table type="delete" @click="deleteMenu" />
           </template>
@@ -61,9 +60,19 @@
     </art-table>
 
     <el-dialog :title="dialogTitle" v-model="dialogVisible" width="700px" align-center>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="85px">
+      <el-form
+        ref="formRef"
+        :model="activeForm"
+        :rules="activeRules"
+        label-width="85px"
+        :validate-on-rule-change="false"
+      >
         <el-form-item label="菜单类型">
-          <el-radio-group v-model="labelPosition" :disabled="disableMenuType">
+          <el-radio-group
+            v-model="labelPosition"
+            :disabled="disableMenuType"
+            @change="handleFormTypeChange"
+          >
             <el-radio-button value="menu" label="menu">菜单</el-radio-button>
             <el-radio-button value="button" label="button">权限</el-radio-button>
           </el-radio-group>
@@ -73,28 +82,28 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="菜单标题" prop="title">
-                <el-input v-model="form.title" placeholder="菜单标题"></el-input>
+                <el-input v-model="menuForm.title" placeholder="菜单标题"></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="路由地址" prop="path">
-                <el-input v-model="form.path" placeholder="路由地址"></el-input>
+                <el-input v-model="menuForm.path" placeholder="路由地址"></el-input>
               </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="菜单名称" prop="name">
-                <el-input v-model="form.name" placeholder="菜单名称"></el-input>
+                <el-input v-model="menuForm.name" placeholder="菜单名称"></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="图标" prop="icon">
                 <icon-selector
-                  v-model="form.icon"
+                  v-model="menuForm.icon"
                   :iconType="iconType"
-                  :defaultIcon="form.icon"
-                  :iconColor="form.color"
+                  :defaultIcon="menuForm.icon"
+                  :iconColor="menuForm.color"
                   width="230px"
                 />
               </el-form-item>
@@ -103,16 +112,19 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="组件路径" prop="component">
-                <el-input v-model="form.component" placeholder="例如: system/user/index"></el-input>
+                <el-input
+                  v-model="menuForm.component"
+                  placeholder="例如: /system/user/index"
+                ></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="颜色" prop="color">
                 <el-color-picker
-                  v-model="form.color"
+                  v-model="menuForm.color"
                   :predefine="predefineColors"
                   class="full-width-color-picker"
-                />
+                ></el-color-picker>
               </el-form-item>
             </el-col>
           </el-row>
@@ -121,14 +133,14 @@
             <el-col :span="12">
               <el-form-item label="外部链接" prop="link">
                 <el-input
-                  v-model="form.link"
+                  v-model="menuForm.link"
                   placeholder="外部链接/内嵌地址(https://www.baidu.com)"
                 ></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="文本徽章" prop="showTextBadge">
-                <el-input v-model="form.showTextBadge" placeholder="留空则不显示"></el-input>
+                <el-input v-model="menuForm.showTextBadge" placeholder="留空则不显示"></el-input>
               </el-form-item>
             </el-col>
           </el-row>
@@ -137,7 +149,7 @@
             <el-col :span="12">
               <el-form-item label="菜单排序" prop="sort" style="width: 100%">
                 <el-input-number
-                  v-model="form.sort"
+                  v-model="menuForm.sort"
                   style="width: 100%"
                   @change="handleChange"
                   :min="1"
@@ -151,28 +163,28 @@
             <el-col :span="5">
               <el-tooltip content="菜单是否在侧边栏隐藏" placement="top">
                 <el-form-item label="隐藏菜单" prop="isHidden">
-                  <el-switch v-model="form.isHidden"></el-switch>
+                  <el-switch v-model="menuForm.isHidden"></el-switch>
                 </el-form-item>
               </el-tooltip>
             </el-col>
             <el-col :span="5">
               <el-tooltip content="页面是否使用 keep-alive 缓存" placement="top">
                 <el-form-item label="页面缓存" prop="keepAlive">
-                  <el-switch v-model="form.keepAlive"></el-switch>
+                  <el-switch v-model="menuForm.keepAlive"></el-switch>
                 </el-form-item>
               </el-tooltip>
             </el-col>
             <el-col :span="5">
               <el-tooltip content="是否为内嵌外部链接 (iframe)" placement="top">
                 <el-form-item label="是否内嵌" prop="isIframe">
-                  <el-switch v-model="form.isIframe"></el-switch>
+                  <el-switch v-model="menuForm.isIframe"></el-switch>
                 </el-form-item>
               </el-tooltip>
             </el-col>
             <el-col :span="5">
               <el-tooltip content="是否在标签页栏隐藏" placement="top">
                 <el-form-item label="隐藏Tab" prop="isHideTab">
-                  <el-switch v-model="form.isHideTab"></el-switch>
+                  <el-switch v-model="menuForm.isHideTab"></el-switch>
                 </el-form-item>
               </el-tooltip>
             </el-col>
@@ -182,35 +194,23 @@
             <el-col :span="5">
               <el-tooltip content="是否在顶部和侧边栏显示徽标" placement="top">
                 <el-form-item label="显示徽标" prop="showBadge">
-                  <el-switch v-model="form.showBadge"></el-switch>
+                  <el-switch v-model="menuForm.showBadge"></el-switch>
                 </el-form-item>
               </el-tooltip>
             </el-col>
             <el-col :span="5">
               <el-tooltip content="当前路由是否在主布局内显示 (通常为 true)" placement="top">
                 <el-form-item label="主布局内" prop="isInMainContainer">
-                  <el-switch v-model="form.isInMainContainer"></el-switch>
+                  <el-switch v-model="menuForm.isInMainContainer"></el-switch>
                 </el-form-item>
               </el-tooltip>
             </el-col>
-            <!-- isEnable 和 isMenu 是旧的字段，模型中没有，暂时注释或移除 -->
-            <!-- <el-col :span="5">
-              <el-form-item label="是否启用" prop="isEnable">
-                <el-switch v-model="form.isEnable"></el-switch>
-              </el-form-item>
-            </el-col>
-            <el-col :span="5">
-              <el-form-item label="是否内嵌" prop="isMenu">
-                 <el-switch v-model="form.isIframe"></el-switch> isIframe 似乎更合适
-                <el-switch v-model="form.isMenu"></el-switch> 
-              </el-form-item>
-            </el-col> -->
           </el-row>
 
           <el-form-item label="备注" prop="remarks">
             <el-input
               type="textarea"
-              v-model="form.remarks"
+              v-model="menuForm.remarks"
               placeholder="请输入备注信息"
               :rows="5"
             ></el-input>
@@ -219,22 +219,55 @@
 
         <template v-if="labelPosition === 'button'">
           <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="权限名称" prop="authName">
-                <el-input v-model="form.authName" placeholder="权限名称"></el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="权限标识" prop="authLabel">
-                <el-input v-model="form.authLabel" placeholder="权限标识"></el-input>
+            <el-col :span="24">
+              <el-form-item label="权限类型">
+                <el-radio-group v-model="permissionForm.permissionType">
+                  <el-radio-button :value="1" label="1">路由</el-radio-button>
+                  <el-radio-button :value="2" label="2">按钮</el-radio-button>
+                  <el-radio-button :value="3" label="3">API</el-radio-button>
+                </el-radio-group>
               </el-form-item>
             </el-col>
           </el-row>
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="权限排序" prop="authSort" style="width: 100%">
+              <el-form-item label="权限名称" prop="permissionName">
+                <el-input v-model="permissionForm.permissionName" placeholder="权限名称"></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="权限标识" prop="permissionCode">
+                <el-input v-model="permissionForm.permissionCode" placeholder="权限标识"></el-input>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="图标" prop="icon">
+                <icon-selector
+                  v-model="permissionForm.icon"
+                  :iconType="iconType"
+                  :defaultIcon="permissionForm.icon"
+                  :iconColor="permissionForm.color"
+                  width="230px"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="颜色" prop="color">
+                <el-color-picker
+                  v-model="permissionForm.color"
+                  :predefine="predefineColors"
+                  class="full-width-color-picker"
+                ></el-color-picker>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="权限排序" prop="sort" style="width: 100%">
                 <el-input-number
-                  v-model="form.authSort"
+                  v-model="permissionForm.sort"
                   style="width: 100%"
                   @change="handleChange"
                   :min="1"
@@ -243,6 +276,103 @@
               </el-form-item>
             </el-col>
           </el-row>
+
+          <!-- 路由权限特有表单 -->
+          <template v-if="permissionForm.permissionType === 1">
+            <el-divider>路由权限信息</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="24">
+                <el-form-item label="页面地址" prop="pagePermission.pageUrl">
+                  <el-input
+                    v-model="permissionForm.pagePermission.pageUrl"
+                    placeholder="页面请求的地址"
+                  ></el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-form-item label="备注" prop="pagePermission.remarks">
+              <el-input
+                type="textarea"
+                v-model="permissionForm.pagePermission.remarks"
+                placeholder="请输入备注信息"
+                :rows="3"
+              ></el-input>
+            </el-form-item>
+          </template>
+
+          <!-- 按钮权限特有表单 -->
+          <template v-if="permissionForm.permissionType === 2">
+            <el-divider>按钮权限信息</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="按钮名称" prop="button.buttonName">
+                  <el-input
+                    v-model="permissionForm.button.buttonName"
+                    placeholder="按钮的功能名称"
+                  ></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="按钮标识" prop="button.buttonKey">
+                  <el-input
+                    v-model="permissionForm.button.buttonKey"
+                    placeholder="按钮标识，如：user_add"
+                  ></el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-form-item label="备注" prop="button.remarks">
+              <el-input
+                type="textarea"
+                v-model="permissionForm.button.remarks"
+                placeholder="请输入备注信息"
+                :rows="3"
+              ></el-input>
+            </el-form-item>
+          </template>
+
+          <!-- API权限特有表单 -->
+          <template v-if="permissionForm.permissionType === 3">
+            <el-divider>API权限信息</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="24">
+                <el-form-item label="API地址" prop="api.apiUrl">
+                  <el-input
+                    v-model="permissionForm.api.apiUrl"
+                    placeholder="API的请求地址"
+                  ></el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="24">
+                <el-form-item label="请求方法" prop="api.httpMethod">
+                  <el-radio-group v-model="permissionForm.api.httpMethod">
+                    <el-radio-button value="GET">GET</el-radio-button>
+                    <el-radio-button value="POST">POST</el-radio-button>
+                    <el-radio-button value="PUT">PUT</el-radio-button>
+                    <el-radio-button value="DELETE">DELETE</el-radio-button>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="24">
+                <el-form-item label="是否公共" prop="api.common">
+                  <el-switch v-model="permissionForm.api.common"></el-switch>
+                  <span class="form-tip">公共API无需权限即可访问</span>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-form-item label="备注" prop="api.remarks">
+              <el-input
+                type="textarea"
+                v-model="permissionForm.api.remarks"
+                placeholder="请输入备注信息"
+                :rows="3"
+              ></el-input>
+            </el-form-item>
+          </template>
         </template>
       </el-form>
 
@@ -267,6 +397,14 @@
   import PermissionList from '@/components/Permission/PermissionList.vue'
   import { menuService, MenuApiService } from '@/api/menuApi'
   import type { AddMenuParams, EditMenuParams } from '@/api/model/menuModel'
+  import {
+    PermissionTypeEnum,
+    AddPermissionParams,
+    EditPermissionParams,
+    ApiPermission,
+    PagePermission,
+    ButtonPermission
+  } from '@/api/model/menuModel'
 
   const menuList = computed(() => useMenuStore().getMenuList)
 
@@ -279,16 +417,15 @@
   }
 
   const dialogVisible = ref(false)
-  const form = reactive({
-    // 菜单
+
+  // 菜单表单数据
+  const menuForm = reactive({
     title: '',
     path: '',
     name: '',
     icon: '',
     color: '',
-    isEnable: true,
     sort: 1,
-    isMenu: true,
     keepAlive: true,
     isHidden: true,
     link: '',
@@ -298,12 +435,33 @@
     showBadge: false,
     showTextBadge: '',
     isHideTab: false,
-    isInMainContainer: true,
-    // 权限 (修改这部分)
-    authName: '',
-    authLabel: '',
-    authIcon: '',
-    authSort: 1
+    isInMainContainer: true
+  })
+
+  // 权限表单数据
+  const permissionForm = reactive({
+    permissionName: '',
+    permissionCode: '',
+    permissionType: PermissionTypeEnum.ROUTE,
+    menuId: 0,
+    icon: '',
+    color: '',
+    sort: 1,
+    api: {
+      apiUrl: '',
+      httpMethod: 'GET',
+      common: false,
+      remarks: ''
+    } as ApiPermission,
+    pagePermission: {
+      pageUrl: '',
+      remarks: ''
+    } as PagePermission,
+    button: {
+      buttonName: '',
+      buttonKey: '',
+      remarks: ''
+    } as ButtonPermission
   })
 
   // 预定义颜色
@@ -326,7 +484,9 @@
   const iconType = ref(IconTypeEnum.UNICODE)
 
   const labelPosition = ref('menu')
-  const rules = reactive<FormRules>({
+
+  // 菜单表单验证规则
+  const menuRules = reactive<FormRules>({
     title: [
       { required: true, message: '请输入菜单标题', trigger: 'blur' },
       { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
@@ -335,9 +495,27 @@
     name: [
       { required: true, message: '请输入菜单名称', trigger: 'blur' },
       { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
-    ],
-    authName: [{ required: true, message: '请输入权限名称', trigger: 'blur' }],
-    authLabel: [{ required: true, message: '请输入权限权限标识', trigger: 'blur' }]
+    ]
+  })
+
+  // 权限表单验证规则
+  const permissionRules = reactive<FormRules>({
+    permissionName: [{ required: true, message: '请输入权限名称', trigger: 'blur' }],
+    permissionCode: [{ required: true, message: '请输入权限标识', trigger: 'blur' }],
+    'api.apiUrl': [{ required: true, message: '请输入API地址', trigger: 'blur' }],
+    'api.httpMethod': [{ required: true, message: '请选择请求方法', trigger: 'change' }],
+    'pagePermission.pageUrl': [{ required: true, message: '请输入页面地址', trigger: 'blur' }],
+    'button.buttonName': [{ required: true, message: '请输入按钮名称', trigger: 'blur' }],
+    'button.buttonKey': [{ required: true, message: '请输入按钮标识', trigger: 'blur' }]
+  })
+
+  // 动态计算当前活动的表单对象和规则
+  const activeForm = computed(() => {
+    return labelPosition.value === 'menu' ? menuForm : permissionForm
+  })
+
+  const activeRules = computed(() => {
+    return labelPosition.value === 'menu' ? menuRules : permissionRules
   })
 
   const tableData = computed(() => menuList.value)
@@ -345,8 +523,28 @@
   const isEdit = ref(false)
   const formRef = ref<FormInstance>()
   const dialogTitle = computed(() => {
-    const type = labelPosition.value === 'menu' ? '菜单' : '权限'
-    return isEdit.value ? `编辑${type}` : `新建${type}`
+    if (isEdit.value) {
+      if (labelPosition.value === 'menu') {
+        return `编辑菜单【${currentEditRow.value.name}】`
+      } else {
+        // 编辑权限时显示权限名称
+        return `编辑权限【${currentEditRow.value.permissionName || ''}】`
+      }
+    } else {
+      if (currentEditRow.value) {
+        if (labelPosition.value === 'menu') {
+          return `新建子菜单【父级菜单：${currentEditRow.value.name}】`
+        } else {
+          return `新建权限【所属菜单：${currentEditRow.value.name || currentEditRow.value.meta?.title || ''}】`
+        }
+      } else {
+        if (labelPosition.value === 'menu') {
+          return `新建菜单`
+        } else {
+          return `新建权限`
+        }
+      }
+    }
   })
 
   // 用于记录当前编辑的行数据
@@ -369,24 +567,24 @@
           const menuStore = useMenuStore()
 
           if (labelPosition.value === 'menu') {
-            // 准备菜单数据
+            // 菜单表单处理逻辑
             const params: AddMenuParams | EditMenuParams = {
-              title: form.title,
-              path: form.path,
-              name: form.name,
-              icon: form.icon,
-              color: form.color,
-              sort: form.sort,
-              isHide: !form.isHidden,
-              link: form.link,
-              isIframe: form.isIframe,
-              keepAlive: form.keepAlive,
-              remarks: form.remarks,
-              component: form.component,
-              showBadge: form.showBadge,
-              showTextBadge: form.showTextBadge,
-              isHideTab: form.isHideTab,
-              isInMainContainer: form.isInMainContainer
+              title: menuForm.title,
+              path: menuForm.path,
+              name: menuForm.name,
+              icon: menuForm.icon,
+              color: menuForm.color,
+              sort: menuForm.sort,
+              isHide: !menuForm.isHidden,
+              link: menuForm.link,
+              isIframe: menuForm.isIframe,
+              keepAlive: menuForm.keepAlive,
+              remarks: menuForm.remarks,
+              component: menuForm.component,
+              showBadge: menuForm.showBadge,
+              showTextBadge: menuForm.showTextBadge,
+              isHideTab: menuForm.isHideTab,
+              isInMainContainer: menuForm.isInMainContainer
             }
 
             if (isEdit.value && currentEditRow.value) {
@@ -412,9 +610,48 @@
               }
             }
           } else {
-            // 权限按钮的新增/编辑逻辑 (暂未实现，可以按需补充)
-            ElMessage.warning('权限按钮功能暂未接入API')
-            return
+            // 权限表单处理逻辑
+            // 只保留当前选中的权限类型对应的数据
+            let permissionData: AddPermissionParams | EditPermissionParams = {
+              permissionName: permissionForm.permissionName,
+              permissionCode: permissionForm.permissionCode,
+              permissionType: permissionForm.permissionType,
+              menuId: permissionForm.menuId,
+              icon: permissionForm.icon,
+              color: permissionForm.color,
+              sort: permissionForm.sort
+            }
+
+            // 根据权限类型，添加对应的特定数据
+            switch (permissionForm.permissionType) {
+              case PermissionTypeEnum.ROUTE:
+                permissionData.pagePermission = { ...permissionForm.pagePermission }
+                break
+              case PermissionTypeEnum.BUTTON:
+                permissionData.button = { ...permissionForm.button }
+                break
+              case PermissionTypeEnum.API:
+                permissionData.api = { ...permissionForm.api }
+                break
+            }
+
+            if (isEdit.value && currentEditRow.value) {
+              // 编辑权限
+              const editPermissionParams: EditPermissionParams = {
+                ...permissionData,
+                id: currentEditRow.value.id
+              }
+              const res = await MenuApiService.editPermission(editPermissionParams)
+              if (!res.success) {
+                throw new Error(res.message || '编辑权限失败')
+              }
+            } else {
+              // 新增权限
+              const res = await MenuApiService.addPermission(permissionData)
+              if (!res.success) {
+                throw new Error(res.message || '新增权限失败')
+              }
+            }
           }
 
           ElMessage.success(`${isEdit.value ? '编辑' : '新增'}成功`)
@@ -430,64 +667,143 @@
     })
   }
 
-  const showModel = (type: string, row?: any, mainMenuAdd: boolean = false) => {
-    console.log('showModel called with row:', JSON.stringify(row || {}))
+  const showModel = (type: string, row?: any, mainMenuAdd: boolean = false, parentRow?: any) => {
     dialogVisible.value = true
     labelPosition.value = type
     isEdit.value = !!row
     isMainMenuAdd.value = mainMenuAdd
-    currentEditRow.value = row
+
+    // 修改逻辑：优先保存parentRow（如果存在），否则保存row
+    // 这样确保即使初始type是menu，也能保存菜单行数据
+    currentEditRow.value = parentRow || row
+
     resetForm()
 
-    if (isEdit.value && type === 'menu') {
+    if (isEdit.value) {
       nextTick(() => {
-        console.log(
-          'Inside nextTick, currentEditRow data:',
-          JSON.stringify(currentEditRow.value || {})
-        )
         try {
-          form.title = formatMenuTitle(currentEditRow.value.meta?.title)
-          form.path = currentEditRow.value.path
-          form.name = currentEditRow.value.name
-          form.icon = currentEditRow.value.meta?.icon
-          form.color = currentEditRow.value.meta?.color || null
-          form.sort = currentEditRow.value.sort || 1
-          form.keepAlive = currentEditRow.value.meta?.keepAlive ?? true
-          form.isHidden =
-            currentEditRow.value.meta?.isHide !== undefined
-              ? !currentEditRow.value.meta.isHide
-              : true
-          form.link = currentEditRow.value.meta?.link || ''
-          form.isIframe = currentEditRow.value.meta?.isIframe || false
+          if (type === 'menu') {
+            // 编辑菜单数据填充
+            menuForm.title = formatMenuTitle(currentEditRow.value.meta?.title)
+            menuForm.path = currentEditRow.value.path
+            menuForm.name = currentEditRow.value.name
+            menuForm.icon = currentEditRow.value.meta?.icon
+            menuForm.color = currentEditRow.value.meta?.color || null
+            menuForm.sort = currentEditRow.value.sort || 1
+            menuForm.keepAlive = currentEditRow.value.meta?.keepAlive ?? true
+            menuForm.isHidden =
+              currentEditRow.value.meta?.isHide !== undefined
+                ? !currentEditRow.value.meta.isHide
+                : true
+            menuForm.link = currentEditRow.value.meta?.link || ''
+            menuForm.isIframe = currentEditRow.value.meta?.isIframe || false
+            menuForm.remarks = currentEditRow.value.remarks || ''
+            menuForm.component = currentEditRow.value.component || ''
+            menuForm.showBadge = currentEditRow.value.meta?.showBadge || false
+            menuForm.showTextBadge = currentEditRow.value.meta?.showTextBadge || ''
+            menuForm.isHideTab = currentEditRow.value.meta?.isHideTab || false
+            menuForm.isInMainContainer = currentEditRow.value.meta?.isInMainContainer ?? true
+          } else if (type === 'button' && row) {
+            // 确保在表单加载前设置为权限表单类型
+            labelPosition.value = 'button'
 
-          const remarksValue = currentEditRow.value.remarks || ''
-          console.log('Value fetched for remarks:', remarksValue)
-          form.remarks = remarksValue
-          console.log('form.remarks after assignment:', form.remarks)
+            // 编辑权限数据填充
+            permissionForm.permissionName = row.permissionName || ''
+            permissionForm.permissionCode = row.permissionCode || ''
+            permissionForm.permissionType = Number(row.permissionType) || PermissionTypeEnum.ROUTE
+            permissionForm.menuId = row.menuId || 0
+            permissionForm.icon = row.icon || ''
+            permissionForm.color = row.color || null
+            permissionForm.sort = row.sort || 1
+            permissionForm.menuId = row.menu?.id
 
-          form.component = currentEditRow.value.component || ''
-          form.showBadge = currentEditRow.value.meta?.showBadge || false
-          form.showTextBadge = currentEditRow.value.meta?.showTextBadge || ''
-          form.isHideTab = currentEditRow.value.meta?.isHideTab || false
-          form.isInMainContainer = currentEditRow.value.meta?.isInMainContainer ?? true
+            // 权限表单类型特定数据需要重置
+            permissionForm.api = {
+              apiUrl: '',
+              httpMethod: 'GET',
+              common: false,
+              remarks: ''
+            }
+            permissionForm.pagePermission = {
+              pageUrl: '',
+              remarks: ''
+            }
+            permissionForm.button = {
+              buttonName: '',
+              buttonKey: '',
+              remarks: ''
+            }
+
+            console.log('编辑权限，权限类型：', permissionForm.permissionType, '完整数据：', row)
+
+            // 根据权限类型设置特定字段
+            if (permissionForm.permissionType === PermissionTypeEnum.ROUTE && row.pagePermission) {
+              permissionForm.pagePermission = { ...row.pagePermission }
+            } else if (permissionForm.permissionType === PermissionTypeEnum.BUTTON && row.button) {
+              permissionForm.button = { ...row.button }
+            } else if (permissionForm.permissionType === PermissionTypeEnum.API && row.api) {
+              permissionForm.api = { ...row.api }
+              console.log('API数据已设置:', permissionForm.api)
+            }
+
+            // 如果权限有嵌套的api对象，也要考虑这种情况
+            if (permissionForm.permissionType === PermissionTypeEnum.API) {
+              // 处理可能存在的不同数据结构
+              if (row.api) {
+                permissionForm.api = { ...row.api }
+              } else if (row.apiUrl) {
+                // 处理扁平结构
+                permissionForm.api.apiUrl = row.apiUrl
+                permissionForm.api.httpMethod = row.httpMethod || 'GET'
+                permissionForm.api.common = row.common || false
+                permissionForm.api.remarks = row.remarks || ''
+              }
+
+              // 从图中看到api信息可能直接在row中
+              // 调试输出API相关信息
+              console.log('API权限详细信息:', {
+                从row中: {
+                  apiUrl: row.apiUrl,
+                  httpMethod: row.httpMethod,
+                  common: row.common
+                },
+                从api对象中: row.api,
+                设置后的值: permissionForm.api
+              })
+            }
+          }
         } catch (e) {
           console.error('Error during form data assignment in nextTick:', e)
         }
       })
+    } else {
+      // 新增权限时，确保设置正确的菜单ID
+      if (type === 'button' && currentEditRow.value) {
+        // 设置当前选中菜单的ID
+        console.log('设置权限的菜单ID:', currentEditRow.value.id)
+        permissionForm.menuId = currentEditRow.value.id || 0
+      } else if (parentRow && currentEditRow.value) {
+        // 如果是从菜单行添加，预先设置menuId，以备后续切换到权限表单
+        permissionForm.menuId = currentEditRow.value.id || 0
+      }
     }
   }
 
   const resetForm = () => {
     formRef.value?.resetFields()
     isMainMenuAdd.value = false
-    Object.assign(form, {
+
+    // 保存当前的 menuId，避免被重置
+    const currentMenuId = permissionForm.menuId
+
+    // 重置菜单表单
+    Object.assign(menuForm, {
       title: '',
       path: '',
       name: '',
       icon: '',
       color: null,
       sort: 1,
-      isMenu: true,
       keepAlive: true,
       isHidden: true,
       link: '',
@@ -497,11 +813,33 @@
       showBadge: false,
       showTextBadge: '',
       isHideTab: false,
-      isInMainContainer: true,
-      authName: '',
-      authLabel: '',
-      authIcon: '',
-      authSort: 1
+      isInMainContainer: true
+    })
+
+    // 重置权限表单，但保留 menuId
+    Object.assign(permissionForm, {
+      permissionName: '',
+      permissionCode: '',
+      permissionType: PermissionTypeEnum.ROUTE,
+      menuId: currentMenuId, // 保留之前的 menuId
+      icon: '',
+      color: null,
+      sort: 1,
+      api: {
+        apiUrl: '',
+        httpMethod: 'GET',
+        common: false,
+        remarks: ''
+      },
+      pagePermission: {
+        pageUrl: '',
+        remarks: ''
+      },
+      button: {
+        buttonName: '',
+        buttonKey: '',
+        remarks: ''
+      }
     })
   }
 
@@ -544,6 +882,21 @@
     if (!isEdit.value && labelPosition.value === 'menu' && isMainMenuAdd.value) return true
     return false
   })
+
+  // 切换表单类型处理方法
+  const handleFormTypeChange = () => {
+    // 清除表单验证结果，防止切换时显示错误
+    if (formRef.value) {
+      nextTick(() => {
+        formRef.value?.clearValidate()
+      })
+    }
+
+    // 如果从菜单切换到权限，且有当前选中的行数据，则设置menuId
+    if (labelPosition.value === 'button' && currentEditRow.value && !isEdit.value) {
+      permissionForm.menuId = currentEditRow.value.id || 0
+    }
+  }
 </script>
 
 <style lang="scss" scoped>
@@ -578,6 +931,12 @@
       :deep(.el-color-picker__color) {
         border-radius: 3px;
       }
+    }
+
+    .form-tip {
+      margin-left: 10px;
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
     }
   }
 </style>

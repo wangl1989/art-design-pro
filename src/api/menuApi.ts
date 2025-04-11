@@ -7,7 +7,12 @@ import { processRoute } from '@/utils/menu'
 import { ElLoading } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { ElMessage } from 'element-plus'
-import { AddMenuParams, EditMenuParams } from '@/api/model/menuModel' // 导入菜单参数接口
+import {
+  AddMenuParams,
+  EditMenuParams,
+  AddPermissionParams,
+  EditPermissionParams
+} from '@/api/model/menuModel' // 导入菜单和权限参数接口
 
 // 菜单接口
 export const menuService = {
@@ -76,6 +81,22 @@ export class MenuApiService {
     // 直接返回 request.put 返回的 Promise
     return request.put<BaseResult<null>>({
       url: '/api/admin/menu/edit',
+      params
+    })
+  }
+
+  // 新增权限
+  static addPermission(params: AddPermissionParams) {
+    return request.post<BaseResult<null>>({
+      url: '/api/admin/permission/add',
+      params
+    })
+  }
+
+  // 编辑权限
+  static editPermission(params: EditPermissionParams) {
+    return request.put<BaseResult<null>>({
+      url: '/api/admin/permission/edit',
       params
     })
   }

@@ -1,7 +1,11 @@
 <template>
   <div class="page-content">
     <el-row :gutter="20" style="margin-left: 15px">
-      <el-button type="primary" @click="showModel('menu', null, true)" v-ripple
+      <el-button
+        v-auth="'root_menu_add'"
+        type="primary"
+        @click="showModel('menu', null, true)"
+        v-ripple
         >新增主菜单</el-button
       >
     </el-row>
@@ -18,7 +22,10 @@
         <el-table-column prop="meta.authList" label="可操作权限">
           <template #default="scope">
             <!-- 检查是否有权限列表 -->
-            <div v-if="scope.row.meta?.authList && scope.row.meta.authList.length > 0">
+            <div
+              v-if="scope.row.meta?.authList && scope.row.meta.authList.length > 0"
+              v-auth="'show_permission_list'"
+            >
               <!-- 权限按钮 -->
               <el-button type="primary" link @click="toggleAuthList(scope.$index)">
                 共 {{ scope.row.meta.authList.length }} 个权限
@@ -27,8 +34,8 @@
               <!-- 自定义的权限列表弹出框，通过状态控制 -->
               <el-dialog
                 v-model="authListVisible[scope.$index]"
-                title="权限列表"
-                :width="500"
+                :title="`权限列表【所属菜单：${formatMenuTitle(scope.row.meta?.title)}】`"
+                :width="1200"
                 :append-to-body="true"
                 :destroy-on-close="false"
                 align-center
@@ -41,7 +48,7 @@
               </el-dialog>
             </div>
             <!-- 如果没有权限则显示 '-' -->
-            <span v-else>-</span>
+            <span v-else></span>
           </template>
         </el-table-column>
 
@@ -53,7 +60,7 @@
           <template #default="scope">
             <button-table type="add" @click="showModel('menu', null, false, scope.row)" />
             <button-table type="edit" @click="showDialog('edit', scope.row)" />
-            <button-table type="delete" @click="deleteMenu" />
+            <button-table type="delete" @click="deleteMenu(scope.row)" />
           </template>
         </el-table-column>
       </template>
@@ -221,7 +228,7 @@
           <el-row :gutter="20">
             <el-col :span="24">
               <el-form-item label="权限类型">
-                <el-radio-group v-model="permissionForm.permissionType">
+                <el-radio-group v-model="permissionForm.permissionType" :disabled="isEdit">
                   <el-radio-button :value="1" label="1">路由</el-radio-button>
                   <el-radio-button :value="2" label="2">按钮</el-radio-button>
                   <el-radio-button :value="3" label="3">API</el-radio-button>
@@ -293,7 +300,7 @@
             <el-form-item label="备注" prop="pagePermission.remarks">
               <el-input
                 type="textarea"
-                v-model="permissionForm.pagePermission.remarks"
+                v-model="permissionForm.remarks"
                 placeholder="请输入备注信息"
                 :rows="3"
               ></el-input>
@@ -324,7 +331,7 @@
             <el-form-item label="备注" prop="button.remarks">
               <el-input
                 type="textarea"
-                v-model="permissionForm.button.remarks"
+                v-model="permissionForm.remarks"
                 placeholder="请输入备注信息"
                 :rows="3"
               ></el-input>
@@ -367,7 +374,7 @@
             <el-form-item label="备注" prop="api.remarks">
               <el-input
                 type="textarea"
-                v-model="permissionForm.api.remarks"
+                v-model="permissionForm.remarks"
                 placeholder="请输入备注信息"
                 :rows="3"
               ></el-input>
@@ -447,6 +454,7 @@
     icon: '',
     color: '',
     sort: 1,
+    remarks: '',
     api: {
       apiUrl: '',
       httpMethod: 'GET',
@@ -619,7 +627,8 @@
               menuId: permissionForm.menuId,
               icon: permissionForm.icon,
               color: permissionForm.color,
-              sort: permissionForm.sort
+              sort: permissionForm.sort,
+              remarks: permissionForm.remarks
             }
 
             // 根据权限类型，添加对应的特定数据
@@ -715,6 +724,7 @@
             permissionForm.icon = row.icon || ''
             permissionForm.color = row.color || null
             permissionForm.sort = row.sort || 1
+            permissionForm.remarks = row.remarks
             permissionForm.menuId = row.menu?.id
 
             // 权限表单类型特定数据需要重置
@@ -737,8 +747,8 @@
             console.log('编辑权限，权限类型：', permissionForm.permissionType, '完整数据：', row)
 
             // 根据权限类型设置特定字段
-            if (permissionForm.permissionType === PermissionTypeEnum.ROUTE && row.pagePermission) {
-              permissionForm.pagePermission = { ...row.pagePermission }
+            if (permissionForm.permissionType === PermissionTypeEnum.ROUTE && row.page) {
+              permissionForm.pagePermission = { ...row.page }
             } else if (permissionForm.permissionType === PermissionTypeEnum.BUTTON && row.button) {
               permissionForm.button = { ...row.button }
             } else if (permissionForm.permissionType === PermissionTypeEnum.API && row.api) {
@@ -791,7 +801,7 @@
 
   const resetForm = () => {
     formRef.value?.resetFields()
-    isMainMenuAdd.value = false
+    // isMainMenuAdd.value = false
 
     // 保存当前的 menuId，避免被重置
     const currentMenuId = permissionForm.menuId
@@ -843,23 +853,34 @@
     })
   }
 
-  const deleteMenu = async () => {
+  const deleteMenu = async (row: any) => {
+    console.log('currentEditRow.value.id的值为:', row.id)
     try {
-      await ElMessageBox.confirm('确定要删除该菜单吗？删除后无法恢复', '提示', {
+      await ElMessageBox.confirm(`确定要删除该菜单吗？删除后无法恢复`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       })
+      // 调用删除菜单API
+      const res = await MenuApiService.deleteMenu(row.id)
+      if (!res.success) {
+        throw new Error(res.message || '删除菜单失败')
+      }
 
       ElMessage.success('删除成功')
-    } catch (error) {
+
+      // 刷新菜单列表
+      const { menuList: newMenuList, closeLoading } = await menuService.getMenuList(0)
+      useMenuStore().setMenuList(newMenuList)
+      closeLoading()
+    } catch (error: any) {
       if (error !== 'cancel') {
-        ElMessage.error('删除失败')
+        ElMessage.error(error.message || '删除失败')
       }
     }
   }
 
-  const deleteAuth = async () => {
+  const deleteAuth = async (row: any) => {
     try {
       await ElMessageBox.confirm('确定要删除该权限吗？删除后无法恢复', '提示', {
         confirmButtonText: '确定',
@@ -867,10 +888,21 @@
         type: 'warning'
       })
 
+      // 调用删除权限API
+      const res = await MenuApiService.deletePermission(row.id)
+      if (!res.success) {
+        throw new Error(res.message || '删除权限失败')
+      }
+
       ElMessage.success('删除成功')
-    } catch (error) {
+
+      // 刷新菜单列表
+      const { menuList: newMenuList, closeLoading } = await menuService.getMenuList(0)
+      useMenuStore().setMenuList(newMenuList)
+      closeLoading()
+    } catch (error: any) {
       if (error !== 'cancel') {
-        ElMessage.error('删除失败')
+        ElMessage.error(error.message || '删除失败')
       }
     }
   }

@@ -9,9 +9,8 @@ import { App, Directive } from 'vue'
 const authDirective: Directive = {
   mounted(el: HTMLElement, binding: DirectiveBinding) {
     const authList =
-      (router.currentRoute.value.meta.authList as Array<{ permissionCode: string }>) || []
-
-    const hasPermission = authList.some((item) => item.permissionCode === binding.value)
+      (router.currentRoute.value.meta.authList as Array<{ button: { buttonKey: string } }>) || []
+    const hasPermission = authList.some((item) => item.button?.buttonKey === binding.value)
 
     if (!hasPermission) {
       el.parentNode?.removeChild(el)

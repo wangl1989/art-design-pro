@@ -100,4 +100,22 @@ export class MenuApiService {
       params
     })
   }
+
+  // 删除菜单
+  static deleteMenu(id: number) {
+    return request.del<BaseResult<null>>({
+      url: `/api/admin/menu/delete`,
+      params: { id }
+    })
+  }
+
+  // 删除权限
+  static deletePermission(id: number) {
+    return request.del<BaseResult<null>>({
+      url: `/api/admin/permission/delete`,
+      params: { id }
+    })
+  }
 }
+
+export default new MenuApiService()

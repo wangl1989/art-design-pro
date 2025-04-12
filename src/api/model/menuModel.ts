@@ -75,6 +75,7 @@ export interface BasePermissionParams {
   icon?: string // 图标（可选）
   color?: string // 颜色（可选）
   sort?: number // 排序（可选）
+  remarks?: string // 备注（可选）
   api?: ApiPermission // API权限对象（三选一）
   pagePermission?: PagePermission // 页面权限对象（三选一）
   button?: ButtonPermission // 按钮权限对象（三选一）

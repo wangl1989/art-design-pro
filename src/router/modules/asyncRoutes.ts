@@ -324,13 +324,13 @@ export const asyncRoutes: MenuListType[] = [
               id: 2021,
               permissionName: '新增',
               permissionCode: 'add',
-              permissionType: 3
+              permissionType: 2
             },
             {
               id: 2022,
               permissionName: '编辑',
               permissionCode: 'edit',
-              permissionType: 3
+              permissionType: 2
             }
           ]
         }
@@ -370,7 +370,7 @@ export const asyncRoutes: MenuListType[] = [
               id: 2010,
               permissionName: '发布',
               permissionCode: 'article/article-publish/add',
-              permissionType: 3
+              permissionType: 2
             }
           ]
         }
@@ -457,19 +457,19 @@ export const asyncRoutes: MenuListType[] = [
               id: 4011,
               permissionName: '新增',
               permissionCode: 'add',
-              permissionType: 3
+              permissionType: 2
             },
             {
               id: 4012,
               permissionName: '编辑',
               permissionCode: 'edit',
-              permissionType: 3
+              permissionType: 2
             },
             {
               id: 4013,
               permissionName: '删除',
               permissionCode: 'delete',
-              permissionType: 3
+              permissionType: 2
             }
           ]
         }
@@ -489,19 +489,19 @@ export const asyncRoutes: MenuListType[] = [
               id: 4111,
               permissionName: '新增',
               permissionCode: 'add',
-              permissionType: 3
+              permissionType: 2
             },
             {
               id: 4112,
               permissionName: '编辑',
               permissionCode: 'edit',
-              permissionType: 3
+              permissionType: 2
             },
             {
               id: 4113,
               permissionName: '删除',
               permissionCode: 'delete',
-              permissionType: 3
+              permissionType: 2
             }
           ]
         }

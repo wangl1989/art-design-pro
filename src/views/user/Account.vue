@@ -31,7 +31,7 @@
       :currentPage="pagination.current"
       :pageSize="pagination.size"
       :total="pagination.total"
-      @page-change="handlePageChange"
+      @current-change="handlePageChange"
       @size-change="handleSizeChange"
       v-loading="loading"
     >

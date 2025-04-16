@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import request from '@/utils/http'
 import { PageResult, BaseResult } from '@/types/axios'
 import { LogRecord, LogListParams } from './model/logModel'

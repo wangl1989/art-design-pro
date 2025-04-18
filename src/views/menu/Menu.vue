@@ -206,7 +206,7 @@
               </el-tooltip>
             </el-col>
             <el-col :span="5">
-              <el-tooltip content="当前路由是否在主布局内显示 (通常为 true)" placement="top">
+              <el-tooltip content="当前路由是否在主布局内显示 (通常为 false)" placement="top">
                 <el-form-item label="主布局内" prop="isInMainContainer">
                   <el-switch v-model="menuForm.isInMainContainer"></el-switch>
                 </el-form-item>
@@ -434,7 +434,7 @@
     color: '',
     sort: 1,
     keepAlive: true,
-    isHidden: true,
+    isHidden: false,
     link: '',
     isIframe: false,
     remarks: '',
@@ -442,7 +442,7 @@
     showBadge: false,
     showTextBadge: '',
     isHideTab: false,
-    isInMainContainer: true
+    isInMainContainer: false
   })
 
   // 权限表单数据
@@ -583,7 +583,7 @@
               icon: menuForm.icon,
               color: menuForm.color,
               sort: menuForm.sort,
-              isHide: !menuForm.isHidden,
+              isHide: menuForm.isHidden,
               link: menuForm.link,
               isIframe: menuForm.isIframe,
               keepAlive: menuForm.keepAlive,
@@ -702,8 +702,8 @@
             menuForm.keepAlive = currentEditRow.value.meta?.keepAlive ?? true
             menuForm.isHidden =
               currentEditRow.value.meta?.isHide !== undefined
-                ? !currentEditRow.value.meta.isHide
-                : true
+                ? currentEditRow.value.meta.isHide
+                : false
             menuForm.link = currentEditRow.value.meta?.link || ''
             menuForm.isIframe = currentEditRow.value.meta?.isIframe || false
             menuForm.remarks = currentEditRow.value.remarks || ''
@@ -711,7 +711,7 @@
             menuForm.showBadge = currentEditRow.value.meta?.showBadge || false
             menuForm.showTextBadge = currentEditRow.value.meta?.showTextBadge || ''
             menuForm.isHideTab = currentEditRow.value.meta?.isHideTab || false
-            menuForm.isInMainContainer = currentEditRow.value.meta?.isInMainContainer ?? true
+            menuForm.isInMainContainer = currentEditRow.value.meta?.isInMainContainer ?? false
           } else if (type === 'button' && row) {
             // 确保在表单加载前设置为权限表单类型
             labelPosition.value = 'button'
@@ -815,7 +815,7 @@
       color: null,
       sort: 1,
       keepAlive: true,
-      isHidden: true,
+      isHidden: false,
       link: '',
       isIframe: false,
       remarks: '',
@@ -823,7 +823,7 @@
       showBadge: false,
       showTextBadge: '',
       isHideTab: false,
-      isInMainContainer: true
+      isInMainContainer: false
     })
 
     // 重置权限表单，但保留 menuId
@@ -835,6 +835,7 @@
       icon: '',
       color: null,
       sort: 1,
+      remarks: '',
       api: {
         apiUrl: '',
         httpMethod: 'GET',

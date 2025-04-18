@@ -310,7 +310,14 @@
         trigger: 'blur'
       }
     ],
-    dir: [{ required: true, message: '请输入上传目录', trigger: 'blur' }],
+    dir: [
+      { required: true, message: '请输入上传目录', trigger: 'blur' },
+      {
+        pattern: /^[a-zA-Z][a-zA-Z/]*\/$/,
+        message: '目录名称只能包含字母、斜杠(/),且首字母不能是斜杠,必须是斜杠(/)结尾',
+        trigger: 'blur'
+      }
+    ],
     bucketName: [
       {
         validator: (rule, value, callback) => {

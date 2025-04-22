@@ -52,6 +52,8 @@
           </template>
         </el-table-column>
 
+        <el-table-column prop="sort" label="排序值" />
+
         <el-table-column label="编辑时间" prop="updateDate">
           <template #default="scope">{{ formatDate(scope.row.updateDate) }}</template>
         </el-table-column>

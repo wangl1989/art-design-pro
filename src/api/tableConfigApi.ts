@@ -1,0 +1,109 @@
+import request from '@/utils/http'
+import { PageResult, BaseResult } from '@/types/axios'
+import {
+  TableConfigModel,
+  TableConfigListParams,
+  AddTableConfigParams,
+  EditTableConfigParams,
+  EditTableFieldConfigParams,
+  SimpleTableField,
+  TableFieldConfigModel,
+  SyncTableFieldListParams,
+  getSimpleTableFieldParam
+} from './model/tableConfigModel'
+
+export class TableService {
+  // 获取表格配置列表
+  static getTableConfigList(params: TableConfigListParams) {
+    return request.get<PageResult<TableConfigModel>>({
+      url: '/api/admin/tableConfig/list',
+      params
+    })
+  }
+
+  // 新增表格配置
+  static addTableConfig(params: AddTableConfigParams) {
+    return request.post<BaseResult>({
+      url: '/api/admin/tableConfig/add',
+      params
+    })
+  }
+
+  // 编辑表格配置
+  static editTableConfig(params: EditTableConfigParams) {
+    return request.put<BaseResult>({
+      url: '/api/admin/tableConfig/edit',
+      params
+    })
+  }
+
+  // 删除表格配置
+  static deleteTableConfig(id: number) {
+    return request.del<BaseResult>({
+      url: `/api/admin/tableConfig/delete?id=${id}`
+    })
+  }
+
+  // 恢复表格配置
+  static recoverTableConfig(id: number) {
+    return request.post<BaseResult>({
+      url: `/api/admin/tableConfig/recover?id=${id}`
+    })
+  }
+
+  // 获取表名列表
+  // params: 数据库名称
+  static getTableNameList(params: { schemaName: string }) {
+    return request.get<BaseResult<string[]>>({
+      url: '/api/admin/tableConfig/getTableNameList',
+      params
+    })
+  }
+
+  // 获取模式名列表
+  static getSchemaNameList() {
+    return request.get<BaseResult<string[]>>({
+      url: '/api/admin/tableConfig/getSchemaNameList'
+    })
+  }
+
+  // 同步字段列表接口
+  static syncFieldsByTableName(params: SyncTableFieldListParams) {
+    return request.post<BaseResult>({
+      url: '/api/admin/tableFieldConfig/syncFieldsByTableName',
+      params
+    })
+  }
+
+  // 根据表单配置获取字段集合
+  static getFieldListByTableConfigId(params: { tableConfigId: number }) {
+    return request.get<BaseResult<TableFieldConfigModel[]>>({
+      url: '/api/admin/tableFieldConfig/getFieldsByTableConfigId',
+      params
+    })
+  }
+
+  // 编辑字段配置
+  static editTableFieldConfig(params: EditTableFieldConfigParams) {
+    return request.put<BaseResult>({
+      url: '/api/admin/tableFieldConfig/updateFieldConfig',
+      params
+    })
+  }
+
+  // 获取表的字段简单信息列表
+  static getSimpleTableField(params: getSimpleTableFieldParam) {
+    return request.get<BaseResult<SimpleTableField>>({
+      url: '/api/admin/tableFieldConfig/getSimpleTableField',
+      params
+    })
+  }
+
+  // 字段排序
+  static fieldSort(params: { ids: number[] }) {
+    return request.post<BaseResult>({
+      url: '/api/admin/tableFieldConfig/sortFields',
+      params
+    })
+  }
+}

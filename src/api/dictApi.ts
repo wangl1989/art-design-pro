@@ -17,6 +17,21 @@ export class DictService {
     })
   }
 
+  // 获取字典所有类型
+  static getDictTypeList() {
+    return request.get<BaseResult<DictRecord>>({
+      url: '/api/admin/dict/getDictTypeList'
+    })
+  }
+
+  // 根据类型获取该类型对应的值
+  static getDictListByType(params: { type: string }) {
+    return request.get<BaseResult<DictRecord>>({
+      url: '/api/admin/dict/getDictListByType',
+      params
+    })
+  }
+
   // 新增字典
   static addDict(params: AddDictParams) {
     return request.post<BaseResult>({

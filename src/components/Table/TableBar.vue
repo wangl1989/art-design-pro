@@ -99,10 +99,18 @@
     if (!columnChage.value) {
       let ops: any = []
       props.columns.map((item: any) => {
-        ops.push(item.name)
+        if (item.show) {
+          ops.push(item.name)
+        }
       })
       colOptions.value = ops
-      colSelect.value = ops
+
+      let allCols: any = []
+      props.columns.map((item: any) => {
+        allCols.push(item.name)
+      })
+      colSelect.value = allCols
+
       columnChage.value = true
     }
   }

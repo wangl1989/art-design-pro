@@ -10,10 +10,9 @@ import {
 } from './model/userModel'
 export class UserService {
   // 登录 - 接收 body 和 header 值
-  static login(body: LoginParams, key: string, deviceId: string) {
+  static login(body: LoginParams, deviceId: string) {
     // 构建 headers
     const headers = {
-      'Captcha-Key': key,
       'Device-Id': deviceId
     }
 

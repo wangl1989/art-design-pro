@@ -169,7 +169,6 @@
   }))
 
   const captchaSrc = ref('')
-  const captchaKey = ref('')
   const loading = ref(false)
   const { width } = useWindowSize()
 
@@ -199,11 +198,10 @@
           password: formData.password,
           captcha: formData.captcha
         }
-        const key = captchaKey.value
         const deviceId = localStorage.getItem('deviceId') || ''
 
         try {
-          const res = await UserService.login(bodyParams, key, deviceId)
+          const res = await UserService.login(bodyParams, deviceId)
           if (res.code === ApiStatus.success) {
             const user = res.data // Assuming data includes user details and token
             if (user) {
@@ -319,18 +317,15 @@
       if (code === ApiStatus.success && data) {
         // 将 Base64 字符串构造成 Data URI
         captchaSrc.value = `data:image/png;base64,${data.image}`
-        captchaKey.value = data.key
         formData.captcha = '' // 重置验证码输入框
       } else {
         ElMessage.error(message || '获取验证码失败')
         captchaSrc.value = '' // 清空图片
-        captchaKey.value = ''
       }
     } catch (error) {
       console.error('获取验证码错误:', error)
       ElMessage.error('获取验证码时发生错误')
       captchaSrc.value = '' // 清空图片
-      captchaKey.value = ''
     } finally {
       loading.value = false // 结束加载状态
     }

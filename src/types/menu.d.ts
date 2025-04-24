@@ -20,6 +20,7 @@ export type MenuListType = {
     link?: string // 链接
     isIframe?: boolean // 是否是 iframe
     keepAlive: boolean // 是否缓存
+    originalPath?: string // 原始path路径
     authList?: Array<{
       id: number
       permissionName?: string //权限名称

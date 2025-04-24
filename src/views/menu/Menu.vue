@@ -17,7 +17,7 @@
             {{ formatMenuTitle(scope.row.meta?.title) }}
           </template>
         </el-table-column>
-        <el-table-column prop="path" label="路由" />
+        <el-table-column label="路由" prop="path" />
 
         <el-table-column prop="meta.authList" label="可操作权限">
           <template #default="scope">
@@ -437,6 +437,7 @@
     sort: 1,
     keepAlive: true,
     isHidden: false,
+    parentId: null,
     link: '',
     isIframe: false,
     remarks: '',
@@ -582,6 +583,7 @@
               title: menuForm.title,
               path: menuForm.path,
               name: menuForm.name,
+              parentId: menuForm.parentId || undefined,
               icon: menuForm.icon,
               color: menuForm.color,
               sort: menuForm.sort,
@@ -696,8 +698,9 @@
           if (type === 'menu') {
             // 编辑菜单数据填充
             menuForm.title = formatMenuTitle(currentEditRow.value.meta?.title)
-            menuForm.path = currentEditRow.value.path
+            menuForm.path = currentEditRow.value.meta?.originalPath || currentEditRow.value.path
             menuForm.name = currentEditRow.value.name
+            menuForm.parentId = currentEditRow.value.parentId
             menuForm.icon = currentEditRow.value.meta?.icon
             menuForm.color = currentEditRow.value.meta?.color || null
             menuForm.sort = currentEditRow.value.sort || 1

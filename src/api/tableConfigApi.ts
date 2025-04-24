@@ -60,7 +60,7 @@ export class TableService {
     })
   }
 
-  // 获取模式名列表
+  // 获取模式名(数据库名)列表
   static getSchemaNameList() {
     return request.get<BaseResult<string[]>>({
       url: '/api/admin/tableConfig/getSchemaNameList'

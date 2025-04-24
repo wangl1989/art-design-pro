@@ -25,6 +25,7 @@ declare module 'vue' {
     DragVerify: typeof import('./../components/Form/DragVerify.vue')['default']
     DualBarCompareChart: typeof import('./../components/Widgets/Charts/DualBarCompareChart.vue')['default']
     Editor: typeof import('./../components/Form/Editor.vue')['default']
+    ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElButtonGroup: typeof import('element-plus/es')['ElButtonGroup']

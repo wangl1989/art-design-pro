@@ -17,7 +17,7 @@ export const processRoute = (route: MenuListType, parentPath = ''): MenuListType
         ? `${parentPath}/${route.path}`.replace(/\/+/g, '/') // 规范化路径,避免多余的斜杠
         : route.path
     : ''
-
+  route.meta.originalPath = route.path
   return {
     id: route.id ?? Math.random(), // 使用空值合并运算符
     name: route.name,

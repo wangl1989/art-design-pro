@@ -5,7 +5,9 @@ import {
   RoleRecord,
   RoleListParams,
   SaveRolePermissionsParams,
-  RoleMenusPermissions
+  RoleMenusPermissions,
+  UpdateRoleData,
+  SaveRoleData
 } from './model/roleModel'
 import { PageResult } from '@/types/axios'
 
@@ -35,6 +37,22 @@ export class RoleService {
 
   // 保存角色权限
   static saveRolePermissions(params: SaveRolePermissionsParams) {
+    return request.post<BaseResult>({
+      url: '/api/admin/role/saveRoleMenusPers',
+      data: params
+    })
+  }
+
+  // 更新角色
+  static updateRole(params: UpdateRoleData) {
+    return request.put<BaseResult>({
+      url: '/api/admin/role/edit',
+      data: params
+    })
+  }
+
+  // 新增角色
+  static addRole(params: SaveRoleData) {
     return request.post<BaseResult>({
       url: '/api/admin/role/add',
       data: params

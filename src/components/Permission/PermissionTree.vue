@@ -243,7 +243,6 @@
 
   // setCheckedKeys 应该接收带前缀的 ID 数组
   const setCheckedKeys = (keys: (string | number)[]) => {
-    console.log('Tree setCheckedKeys (接收带前缀):', keys)
     treeRef.value?.setCheckedKeys(keys || [])
   }
 
@@ -266,7 +265,6 @@
   watch(
     () => props.checkedKeys,
     (newKeys) => {
-      console.log('外部传入 checkedKeys 变化:', newKeys)
       if (treeRef.value && newKeys) {
         // 假设 props.checkedKeys 已经是带前缀的格式
         setCheckedKeys(newKeys)

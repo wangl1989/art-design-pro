@@ -83,12 +83,7 @@
 
     <el-dialog v-model="permissionDialog" title="菜单权限" width="30%">
       <div :style="{ maxHeight: '500px', overflowY: 'scroll' }">
-        <permission-tree
-          ref="permissionTreeRef"
-          :menu-list="menuList"
-          :checked-keys="[]"
-          @change="handlePermissionChange"
-        />
+        <permission-tree ref="permissionTreeRef" :menu-list="menuList" :checked-keys="[]" />
       </div>
       <template #footer>
         <div class="dialog-footer">
@@ -126,17 +121,6 @@
   // 当前编辑的角色ID
   const currentRoleId = ref<number | string>(0)
 
-  // 处理权限变更
-  const handlePermissionChange = (
-    menuIds: number[],
-    permissionIds: number[],
-    halfMenuIds?: number[]
-  ) => {
-    console.log('选中的菜单ID:', menuIds)
-    console.log('选中的权限ID:', permissionIds)
-    console.log('半选中的菜单ID:', halfMenuIds || [])
-  }
-
   // 保存权限设置
   const savePermissions = async () => {
     if (!currentRoleId.value) {
@@ -150,8 +134,6 @@
         checkedKeys: [],
         halfCheckedKeys: []
       }
-
-      console.log('获取到的选中节点:', checkedKeys)
 
       // 分离菜单ID和权限ID
       const menuIds: number[] = []
@@ -174,11 +156,6 @@
             }
           }
         }
-      })
-
-      console.log('处理后的ID:', {
-        menuIds,
-        permissionIds
       })
 
       // 调用保存权限的API
@@ -329,19 +306,12 @@
         selectedPermissions.value = permissionIds || []
         selectedMenuIds.value = menuIds || []
 
-        console.log('获取到的权限数据:', {
-          menuIds: selectedMenuIds.value,
-          permissionIds: selectedPermissions.value
-        })
-
         // 将菜单ID和权限ID格式化为树组件需要的格式
         const formattedMenuIds = (menuIds || []).map((id) => `m_${id}`)
         const formattedPermIds = (permissionIds || []).map((id) => `p_${id}`)
 
         // 合并所有需要选中的节点ID
         const allCheckedKeys = [...formattedMenuIds, ...formattedPermIds]
-
-        console.log('设置选中的节点:', allCheckedKeys)
 
         // 确保树组件已经初始化
         if (permissionTreeRef.value) {
@@ -353,7 +323,6 @@
           setTimeout(() => {
             if (permissionTreeRef.value) {
               permissionTreeRef.value.setCheckedKeys(allCheckedKeys)
-              console.log('已设置选中状态', allCheckedKeys)
             }
           }, 200)
         }
@@ -385,13 +354,43 @@
   const handleSubmit = async (formEl: FormInstance | undefined) => {
     if (!formEl) return
 
-    await formEl.validate((valid) => {
+    await formEl.validate(async (valid) => {
       if (valid) {
-        const message = dialogType.value === 'add' ? '新增成功' : '修改成功'
-        ElMessage.success(message)
-        dialogVisible.value = false
-        formEl.resetFields()
-        loadRoleData() // 重新加载数据
+        try {
+          if (dialogType.value === 'add') {
+            // 调用新增角色API
+            const response = await RoleService.addRole({
+              name: form.name,
+              remarks: form.remarks
+            })
+            if (response.success) {
+              ElMessage.success('新增成功')
+              dialogVisible.value = false
+              formEl.resetFields()
+              loadRoleData() // 重新加载数据
+            } else {
+              ElMessage.error(response.message || '新增失败')
+            }
+          } else {
+            // 调用更新角色API
+            const response = await RoleService.updateRole({
+              id: form.id,
+              name: form.name,
+              remarks: form.remarks
+            })
+            if (response.success) {
+              ElMessage.success('修改成功')
+              dialogVisible.value = false
+              formEl.resetFields()
+              loadRoleData() // 重新加载数据
+            } else {
+              ElMessage.error(response.message || '修改失败')
+            }
+          }
+        } catch (error) {
+          console.error('提交角色数据失败:', error)
+          ElMessage.error('操作失败，请重试')
+        }
       }
     })
   }
@@ -411,5 +410,10 @@
       vertical-align: -8px;
       fill: currentcolor;
     }
+  }
+
+  /* 修复aria-hidden警告 */
+  :deep(div[aria-hidden='true']) {
+    display: none !important;
   }
 </style>

@@ -83,7 +83,12 @@
 
     <el-dialog v-model="permissionDialog" title="菜单权限" width="30%">
       <div :style="{ maxHeight: '500px', overflowY: 'scroll' }">
-        <permission-tree ref="permissionTreeRef" :menu-list="menuList" :checked-keys="[]" />
+        <permission-tree
+          ref="permissionTreeRef"
+          :menu-list="menuList"
+          :checked-keys="[]"
+          :allow-menu-selection="true"
+        />
       </div>
       <template #footer>
         <div class="dialog-footer">

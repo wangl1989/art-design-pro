@@ -53,6 +53,7 @@
       <template #bottom>
         <el-button type="primary" @click="handleAdd" v-ripple>新增表格配置</el-button>
         <el-button type="danger" @click="handleBatchDelete" v-ripple>批量删除</el-button>
+        <el-button type="success" @click="handleDownloadCode" v-ripple>下载源码</el-button>
       </template>
     </table-bar>
 
@@ -233,6 +234,7 @@
   import type { FormInstance, FormRules } from 'element-plus'
   import { formatDate } from '@/utils/date'
   import TableFieldConfig from './TableFieldConfig.vue'
+  import FileSaver from 'file-saver'
 
   // 加载状态
   const loading = ref(false)
@@ -670,6 +672,51 @@
   // 刷新表格数据
   const refreshTableData = async () => {
     await loadTableConfigList()
+  }
+
+  // 下载源码
+  const handleDownloadCode = () => {
+    if (selectedConfigs.value.length === 0) {
+      ElMessage.warning('请至少选择一条记录')
+      return
+    }
+
+    // 过滤掉已经标记为删除的记录
+    const validConfigs = selectedConfigs.value.filter((config) => !config.delFlag)
+
+    if (validConfigs.length === 0) {
+      ElMessage.warning('所选记录均已被删除，请重新选择')
+      return
+    }
+
+    ElMessageBox.confirm('确定要下载选中的表格配置源码吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'info'
+    })
+      .then(async () => {
+        try {
+          // 获取选中配置的ID列表
+          const ids = validConfigs.map((config) => config.id)
+          // 显示加载状态
+          loading.value = true
+
+          const res = await TableService.downloadCode({ ids })
+
+          // 使用FileSaver进行下载，直接处理blob数据
+          FileSaver.saveAs(res as Blob, '源码.zip')
+
+          ElMessage.success('源码下载成功')
+        } catch (error) {
+          console.error('下载源码失败:', error)
+          ElMessage.error('下载源码时发生错误')
+        } finally {
+          loading.value = false
+        }
+      })
+      .catch(() => {
+        // 用户取消操作
+      })
   }
 
   // 组件挂载时加载数据

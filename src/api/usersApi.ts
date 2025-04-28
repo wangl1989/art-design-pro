@@ -6,7 +6,8 @@ import {
   UserListParams,
   EditUserParams,
   AddUserParams,
-  UserRecord
+  UserRecord,
+  AssignUserPermissionParams
 } from './model/userModel'
 export class UserService {
   // 登录 - 接收 body 和 header 值
@@ -73,6 +74,22 @@ export class UserService {
     return request.post<BaseResult>({
       url: '/api/admin/user/add',
       params
+    })
+  }
+
+  // 额外分配用户权限
+  static assignUserPermission(params: AssignUserPermissionParams) {
+    return request.post<BaseResult>({
+      url: '/api/admin/user/assignUserPermission',
+      params
+    })
+  }
+
+  // 根据用户ID获取已经给他单独分配的权限ID集合
+  static getAssignedPermissionIds(userId: number) {
+    return request.get<BaseResult<number[]>>({
+      url: '/api/admin/user/userPermission',
+      params: { userId }
     })
   }
 }

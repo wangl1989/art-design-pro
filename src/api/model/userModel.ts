@@ -116,3 +116,9 @@ export interface AddUserParams {
   icon?: string
   remarks?: string
 }
+
+// 分配用户权限的参数接口
+export interface AssignUserPermissionParams {
+  userId: number
+  permissionIds: number[]
+}

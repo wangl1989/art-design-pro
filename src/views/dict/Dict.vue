@@ -11,17 +11,17 @@
         <el-form :model="queryParams" inline>
           <el-row :gutter="15">
             <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item>
+              <el-form-item label="字典类型:">
                 <el-input v-model="queryParams.type" placeholder="请输入字典类型搜索"></el-input>
               </el-form-item>
             </el-col>
             <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item>
+              <el-form-item label="标签名:">
                 <el-input v-model="queryParams.label" placeholder="请输入标签名搜索"></el-input>
               </el-form-item>
             </el-col>
             <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item>
+              <el-form-item label="数据值:">
                 <el-input v-model="queryParams.value" placeholder="请输入数据值搜索"></el-input>
               </el-form-item>
             </el-col>

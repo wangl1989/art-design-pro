@@ -10,39 +10,52 @@
       :default-checked-keys="defaultCheckedKeys"
       check-strictly
       @check="handleCheck"
+      @node-expand="handleNodeExpand"
+      @node-collapse="handleNodeCollapse"
     >
-      <template #default="{ data }">
-        <span class="custom-tree-node">
+      <template #default="{ data, expanded }">
+        <div class="custom-tree-node" :class="data.isPermission ? 'permission-node' : 'menu-node'">
           <!-- ===== 菜单节点 ===== -->
-          <span v-if="!data.isPermission" class="node-content menu-node">
-            <i v-if="data.meta?.icon" :class="data.meta.icon" class="node-icon"></i>
+          <template v-if="!data.isPermission">
+            <span class="node-icon">
+              <!-- 文件夹图标，根据展开状态显示不同图标 -->
+              <span v-if="expanded">📂</span>
+              <span v-else>📁</span>
+            </span>
             <span class="node-title menu-title">{{ formatTitle(data) }}</span>
-            <!-- 菜单 Tag -->
-            <el-tag size="small" class="node-tag tag-menu">菜单</el-tag>
-          </span>
+            <!-- 菜单 Tag 放到最右边 -->
+            <span class="tag-wrapper">
+              <el-tag size="small" class="node-tag tag-menu">菜单</el-tag>
+            </span>
+          </template>
 
           <!-- ===== 权限节点 ===== -->
-          <span v-else class="node-content permission-node">
-            <!-- 你可以保留或移除权限图标 -->
-            <i class="node-icon permission-icon el-icon-key"></i>
-            <span
-              class="node-title permission-title"
-              :class="getPermissionClass(data.permissionType)"
-            >
+          <template v-else>
+            <!-- 根据权限类型显示不同图标 -->
+            <span class="node-icon">
+              <span v-if="data.permissionType === '1'">🔗</span>
+              <span v-else-if="data.permissionType === '2'">🔘</span>
+              <span v-else-if="data.permissionType === '3'">🔑</span>
+              <span v-else>🔑</span>
+            </span>
+            <span class="node-title permission-title">
               {{ data.permissionName }}
             </span>
-            <!-- 固定权限 Tag -->
-            <el-tag size="small" class="node-tag tag-permission">权限</el-tag>
-            <!-- 类型权限 Tag -->
-            <el-tag
-              size="small"
-              :type="getPermissionTagType(data.permissionType)"
-              class="node-tag tag-permission-type"
-            >
-              {{ getPermissionTypeText(data.permissionType) }}
-            </el-tag>
-          </span>
-        </span>
+            <!-- 权限类型 Tag 放到最右边 -->
+            <span class="tag-wrapper">
+              <el-tag size="small" v-if="data.common" type="success" :round="true" class="node-tag"
+                >公用</el-tag
+              >
+              <el-tag
+                size="small"
+                :type="getPermissionTagType(data.permissionType)"
+                class="node-tag"
+              >
+                {{ getPermissionTypeText(data.permissionType) }}
+              </el-tag>
+            </span>
+          </template>
+        </div>
       </template>
     </el-tree>
   </div>
@@ -60,6 +73,7 @@
     menuList: MenuListType[] // 菜单列表
     checkedKeys?: (number | string)[] // 修改: 接受 string[] (带前缀的)
     defaultExpandLevel?: number // 默认展开的层级
+    allowMenuSelection?: boolean // 新增: 是否允许选择菜单节点
   }
 
   interface EmitType {
@@ -69,7 +83,8 @@
   const props = withDefaults(defineProps<Props>(), {
     menuList: () => [],
     checkedKeys: () => [],
-    defaultExpandLevel: 2
+    defaultExpandLevel: 2,
+    allowMenuSelection: true // 默认允许选择菜单节点
   })
 
   const emit = defineEmits<EmitType>()
@@ -77,19 +92,17 @@
   const defaultExpandedKeys = ref<(string | number)[]>([]) // 修改: 类型匹配 node-key
   const defaultCheckedKeys = ref<(string | number)[]>([]) // 修改: 类型匹配 node-key
 
-  // --- 权限类型映射样式类 (用于文字颜色, 可选保留或移除) ---
-  const permissionTypeClass = {
-    1: 'permission-page', // 页面权限
-    2: 'permission-button', // 按钮权限
-    3: 'permission-api' // API权限
-  }
-  const getPermissionClass = (type?: number) => {
-    return type && type in permissionTypeClass
-      ? permissionTypeClass[type as keyof typeof permissionTypeClass]
-      : ''
+  // 处理节点展开和收起事件
+  const handleNodeExpand = () => {
+    // 这些方法在ElTree的实例上调用时会触发重新渲染
+    // 我们这里不需要做额外处理，因为expanded属性会自动传递到template中
   }
 
-  // --- 格式化菜单标题 ---
+  const handleNodeCollapse = () => {
+    // 同上
+  }
+
+  // --- 辅助函数：格式化菜单标题 ---
   const formatTitle = (data: any) => {
     return data.meta?.title ? formatMenuTitle(data.meta.title) : data.name || '未命名菜单'
   }
@@ -98,7 +111,7 @@
   const getPermissionTypeText = (type?: string): string => {
     switch (type) {
       case '1':
-        return '页面'
+        return '路由'
       case '2':
         return '按钮'
       case '3':
@@ -112,17 +125,17 @@
   const getPermissionTagType = (type?: string): TagProps['type'] => {
     switch (type) {
       case '1':
-        return 'warning' // 页面 - 黄色
+        return 'primary' // 路由 - 蓝色
       case '2':
         return 'success' // 按钮 - 绿色
       case '3':
-        return 'danger' // API - 红色
+        return 'warning' // API - 橙色
       default:
         return 'info' // 未知 - 灰色
     }
   }
 
-  // --- treeData 计算属性 (重要修改：确保 ID 格式统一) ---
+  // --- treeData 计算属性 (修改：根据allowMenuSelection属性处理菜单节点的禁用状态) ---
   const treeData = computed(() => {
     const processMenuData = (menus: MenuListType[]): any[] => {
       if (!menus || !menus.length) return []
@@ -134,7 +147,8 @@
           ...menu,
           id: menuNodeId, // 使用带前缀的 ID 作为 node-key
           rawId: menu.id,
-          isPermission: false
+          isPermission: false,
+          disabled: !props.allowMenuSelection // 根据allowMenuSelection设置禁用状态
         }
 
         const permissionNodes: any[] = []
@@ -152,7 +166,9 @@
               permissionName: auth.permissionName || '未命名权限',
               permissionCode: auth.permissionCode,
               permissionType: auth.permissionType,
-              remarks: auth.remarks
+              common: auth.api?.common,
+              remarks: auth.remarks,
+              disabled: false // 权限节点始终可选
             })
           })
         }
@@ -167,12 +183,22 @@
 
   // --- handleCheck 事件处理 ---
   const handleCheck = (node: any, { checkedNodes, halfCheckedNodes }: any) => {
+    // 检查是否点击了禁用的菜单节点
+    if (node.disabled) {
+      // 如果是禁用节点，则不允许选中
+      treeRef.value?.setChecked(node.id, false, false)
+      return
+    }
+
     const menuIds: number[] = []
     const permissionIds: number[] = []
     const halfMenuIds: number[] = [] // 用于存放半选中的 *菜单* 的 rawId
 
     // check-strictly=true 时，checkedNodes 只包含完全选中的节点
     checkedNodes.forEach((n: any) => {
+      // 跳过被禁用的节点
+      if (n.disabled) return
+
       if (n.isPermission && n.permissionId) {
         permissionIds.push(n.permissionId)
       } else if (!n.isPermission && n.rawId) {
@@ -182,6 +208,9 @@
 
     // check-strictly=true 时，halfCheckedNodes 通常只包含菜单节点
     halfCheckedNodes.forEach((n: any) => {
+      // 跳过被禁用的节点
+      if (n.disabled) return
+
       if (!n.isPermission && n.rawId) {
         halfMenuIds.push(n.rawId)
       }
@@ -212,8 +241,6 @@
 
     // 设置默认选中 - 直接使用 props 传入的带前缀的 keys
     defaultCheckedKeys.value = props.checkedKeys || []
-    // 如果父组件传的是原始 ID，需要在这里转换
-    // defaultCheckedKeys.value = (props.checkedKeys || []).map(key => typeof key === 'number' ? `m_${key}` : key); // 示例转换逻辑
 
     // 确保在 tree 渲染后设置选中状态
     nextTick(() => {
@@ -229,8 +256,6 @@
     // getCheckedKeys 和 getHalfCheckedKeys 在 check-strictly=true 时返回 node-key ('m_xxx', 'p_xxx')
     const keys = treeRef.value.getCheckedKeys() || []
     const halfKeys = treeRef.value.getHalfCheckedKeys() || []
-    console.log('Tree getCheckedKeys (带前缀):', keys)
-    console.log('Tree getHalfCheckedKeys (带前缀):', halfKeys)
     return {
       checkedKeys: keys,
       halfCheckedKeys: halfKeys
@@ -268,9 +293,6 @@
       if (treeRef.value && newKeys) {
         // 假设 props.checkedKeys 已经是带前缀的格式
         setCheckedKeys(newKeys)
-        // 如果 props.checkedKeys 是原始 ID，需要转换
-        // const formattedKeys = (newKeys || []).map(k => typeof k === 'number' ? `m_${k}` : k); // 示例转换
-        // setCheckedKeys(formattedKeys);
       } else if (treeRef.value && !newKeys) {
         resetChecked() // 如果传入 null 或 undefined，则清空
       }
@@ -280,13 +302,12 @@
 
   onMounted(() => {
     // initTree() 会在 checkedKeys 的 immediate watch 中被调用，这里可能不需要重复调用
-    // initTree()
   })
 
   const defaultProps = {
     children: 'children',
-    label: (data: any) => (data.isPermission ? data.permissionName : formatTitle(data))
-    // disabled: (data: any) => data.disabled // 如果需要禁用某些节点
+    label: (data: any) => (data.isPermission ? data.permissionName : formatTitle(data)),
+    disabled: 'disabled' // 添加这行，告诉ElTree使用节点的disabled属性
   }
 </script>
 
@@ -296,81 +317,62 @@
 
     .custom-tree-node {
       display: flex;
-      flex-grow: 1; /* 允许节点内容伸展 */
       align-items: center;
-      width: 100%; /* 确保节点内容占满宽度以便对齐 */
+      width: 100%;
+      padding: 6px 0;
       font-size: 14px;
+      border-radius: 4px;
 
-      .node-content {
-        display: inline-flex; /* 使用 flex 布局内部元素 */
-        flex-grow: 1; /* 占据可用空间 */
-        align-items: center;
-        // &.menu-node {} /* 可以为菜单节点添加特定样式 */
-        // &.permission-node {} /* 可以为权限节点添加特定样式 */
+      /* 节点类型样式 */
+      &.menu-node {
+        background-color: #f5f7fa;
       }
 
-      .node-icon {
-        margin-right: 5px;
-
-        &.permission-icon {
-          font-size: 12px;
-          color: #909399;
-        }
-      }
-
-      .node-title {
-        flex-shrink: 0; /* 防止标题被压缩 */
-        margin-right: 8px; /* 标题和第一个 tag 之间的间距 */
-
-        &.menu-title {
-          // font-weight: 500; // 可以取消加粗，让 tag 更突出
-          color: var(--el-text-color-primary); // 保持默认颜色或主题色
-        }
-
-        &.permission-title {
-          font-size: 13px;
-          color: #606266;
-          // 可以移除这里的特定颜色类，让 tag 的颜色作为主要区分
-          // &.permission-button { color: #67c23a; }
-          // &.permission-api { color: #f56c6c; }
-          // &.permission-page { color: #e6a23c; }
-        }
-      }
-
-      .node-tag {
-        flex-shrink: 0; /* 防止 tag 被压缩 */
-        margin-left: 5px; /* Tag 之间的间距 */
-
-        // 自定义 "菜单" Tag 背景色 (示例)
-        &.tag-menu {
-          color: #409eff; // Element UI 蓝色 info 文字
-          background-color: #ecf5ff; // Element UI 蓝色 info 背景
-          border-color: #d9ecff; // Element UI 蓝色 info 边框
-        }
-
-        // 自定义 "权限" Tag 背景色 (示例)
-        &.tag-permission {
-          color: #67c23a; // Element UI 绿色 success 文字
-          background-color: #f0f9eb; // Element UI 绿色 success 背景
-          border-color: #e1f3d8; // Element UI 绿色 success 边框
-        }
-
-        // 类型 Tag (页面/按钮/API) 使用 Element Plus 的 type 样式
-        // 如果需要进一步自定义，可以添加类似下面的规则
-        // &.tag-permission-type.el-tag--warning { ... }
-        // &.tag-permission-type.el-tag--success { ... }
-        // &.tag-permission-type.el-tag--danger { ... }
-      }
-
-      /* 权限节点增加缩进 (可选) */
-      .permission-node {
-        // margin-left: 15px; // 可以调整这里的缩进
+      &.permission-node {
+        background-color: #fff;
       }
     }
 
-    /* 调整 Element Tree 节点内容区域的内边距，给 tag 留出空间 */
+    .node-icon {
+      margin-right: 8px;
+      font-size: 16px;
+    }
+
+    .node-title {
+      flex-grow: 1;
+      margin-right: 8px;
+
+      &.menu-title {
+        color: var(--el-text-color-primary);
+      }
+
+      &.permission-title {
+        color: #666; /* 略浅色字体 */
+      }
+    }
+
+    .tag-wrapper {
+      margin-left: auto; /* 将标签推到最右侧 */
+    }
+
+    .node-tag {
+      margin-right: 10px;
+    }
+
+    /* 调整 Element Plus Tree 节点样式 */
     :deep(.el-tree-node__content) {
-      padding-right: 10px; /* 增加右内边距 */
+      height: auto; /* 允许节点高度自适应 */
+      padding: 2px 0;
+    }
+
+    /* 调整树节点间距 */
+    :deep(.el-tree-node) {
+      margin: 2px 0; /* 节点间的间距 */
+    }
+
+    /* 调整选择框位置 */
+    :deep(.el-checkbox) {
+      margin-right: 6px;
     }
   }
 </style>

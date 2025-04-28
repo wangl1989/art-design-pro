@@ -106,4 +106,13 @@ export class TableService {
       params
     })
   }
+
+  // 下载源码
+  static downloadCode(params: { ids: number[] }) {
+    return request.post<Blob>({
+      url: '/api/admin/tableConfig/downloadCode',
+      params,
+      responseType: 'blob'
+    })
+  }
 }

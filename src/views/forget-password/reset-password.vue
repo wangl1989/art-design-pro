@@ -147,8 +147,7 @@
       try {
         const response = await RegisterService.resetPassword({
           email: email.value,
-          password: formData.password,
-          code: code.value
+          password: formData.password
         })
 
         if (response.success) {

@@ -11,18 +11,23 @@
         <el-form :model="queryParams" inline>
           <el-row :gutter="15">
             <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item>
+              <el-form-item label="操作用户:">
                 <el-input v-model="queryParams.username" placeholder="请输入用户名搜索"></el-input>
               </el-form-item>
             </el-col>
             <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item>
+              <el-form-item label="操作标题:">
                 <el-input v-model="queryParams.title" placeholder="请输入日志标题搜索"></el-input>
               </el-form-item>
             </el-col>
             <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item>
-                <el-select v-model="queryParams.httpMethod" placeholder="请求类型" clearable>
+              <el-form-item label="请选择请求类型:">
+                <el-select
+                  v-model="queryParams.httpMethod"
+                  placeholder="请选择请求类型"
+                  clearable
+                  style="width: 200px"
+                >
                   <el-option label="GET" value="GET"></el-option>
                   <el-option label="POST" value="POST"></el-option>
                   <el-option label="PUT" value="PUT"></el-option>

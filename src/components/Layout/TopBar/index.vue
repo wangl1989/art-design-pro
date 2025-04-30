@@ -150,7 +150,7 @@
                   </div>
                 </div>
                 <ul class="user-menu">
-                  <li @click="goPage('/user/user')">
+                  <li @click="goPage('/system/user/userDetail')">
                     <i class="menu-icon iconfont-sys">&#xe734;</i>
                     <span class="menu-txt">{{ $t('topBar.user.userCenter') }}</span>
                   </li>
@@ -184,6 +184,7 @@
 </template>
 
 <script setup lang="ts">
+  import { nextTick } from 'vue'
   import Breadcrumb from '../Breadcrumb/index.vue'
   import Notice from '../Notice/index.vue'
   import MixedMenu from '../MixedMenu/index.vue'
@@ -272,8 +273,19 @@
     settingStore.setMenuOpen(!menuOpen.value)
   }
 
-  const goPage = (path: string) => {
-    router.push(path)
+  const goPage = async (path: string) => {
+    // 检查 Popover 实例是否存在并尝试关闭
+    if (userMenuPopover.value) {
+      userMenuPopover.value.hide()
+    }
+    // 等待 DOM 更新，并尝试移除焦点后再进行路由跳转
+    nextTick(() => {
+      // 尝试让当前活动元素失焦
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
+      router.push(path)
+    })
   }
 
   const toDocs = () => {

@@ -3,7 +3,12 @@ export enum RoutesAlias {
   Home = '/index/index', // 首页
   Login = '/login', // 登录
   Register = '/register', // 注册
+  RegisterSendEmail = '/register/sendEmail', // 注册发送邮件
+  RegisterCheckEmail = '/register/checkEmail', // 注册验证邮件
+  UserDetail = '/user/userDetail', // 用户详情
   ForgetPassword = '/forget-password', // 忘记密码
+  ForgetPasswordCheckEmail = '/forget-password/check-email', // 忘记密码验证邮箱
+  ForgetPasswordReset = '/forget-password/reset-password', // 忘记密码重置密码
   Exception403 = '/exception/403', // 403
   Exception404 = '/exception/404', // 404
   Exception500 = '/exception/500', // 500

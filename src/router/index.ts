@@ -63,6 +63,12 @@ const staticRoutes: AppRouteRecordRaw[] = [
         name: 'Ecommerce',
         component: () => import('@views/dashboard/ecommerce/index.vue'),
         meta: { title: 'menus.dashboard.ecommerce', keepAlive: false }
+      },
+      {
+        path: RoutesAlias.IconList,
+        name: 'IconList',
+        component: () => import('@views/widgets/IconList.vue'),
+        meta: { title: 'menus.widgets.iconList', keepAlive: false }
       }
     ]
   },
@@ -79,10 +85,44 @@ const staticRoutes: AppRouteRecordRaw[] = [
     meta: { title: 'menus.register.title', isHideTab: true, noLogin: true, setTheme: true }
   },
   {
+    path: RoutesAlias.RegisterSendEmail,
+    name: 'RegisterSendEmail',
+    component: () => import('@views/register/SendEmail.vue'),
+    meta: { title: 'menus.register.sendEmail', isHideTab: true, noLogin: true, setTheme: true }
+  },
+  {
+    path: RoutesAlias.RegisterCheckEmail,
+    name: 'RegisterCheckEmail',
+    component: () => import('@views/register/CheckEmail.vue'),
+    meta: { title: 'menus.register.checkEmail', isHideTab: true, noLogin: true, setTheme: true }
+  },
+  {
     path: RoutesAlias.ForgetPassword,
     name: 'ForgetPassword',
     component: () => import('@views/forget-password/index.vue'),
     meta: { title: 'menus.forgetPassword.title', isHideTab: true, noLogin: true, setTheme: true }
+  },
+  {
+    path: RoutesAlias.ForgetPasswordCheckEmail,
+    name: 'ForgetPasswordCheckEmail',
+    component: () => import('@views/forget-password/check-email.vue'),
+    meta: {
+      title: 'menus.forgetPassword.checkEmail',
+      isHideTab: true,
+      noLogin: true,
+      setTheme: true
+    }
+  },
+  {
+    path: RoutesAlias.ForgetPasswordReset,
+    name: 'ForgetPasswordReset',
+    component: () => import('@views/forget-password/reset-password.vue'),
+    meta: {
+      title: 'menus.forgetPassword.resetPassword',
+      isHideTab: true,
+      noLogin: true,
+      setTheme: true
+    }
   },
   {
     path: '/exception',

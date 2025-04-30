@@ -61,7 +61,7 @@
       <div class="preview-container">
         <img
           v-if="isImageFile"
-          :src="currentResource.webUrl"
+          :src="getImgUrl(currentResource.webUrl)"
           alt="预览图片"
           class="preview-image"
         />
@@ -131,6 +131,13 @@
   const isAudioFile = computed(() => {
     return currentResource.value.fileType?.includes('audio')
   })
+
+  const getImgUrl = (url: string) => {
+    if (url.startsWith('upload')) {
+      return `${import.meta.env.VITE_API_URL}/` + url
+    }
+    return url
+  }
 
   // 加载资源列表数据
   const loadResourcesList = async () => {

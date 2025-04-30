@@ -773,18 +773,6 @@
                 permissionForm.api.common = row.common || false
                 permissionForm.api.remarks = row.remarks || ''
               }
-
-              // 从图中看到api信息可能直接在row中
-              // 调试输出API相关信息
-              console.log('API权限详细信息:', {
-                从row中: {
-                  apiUrl: row.apiUrl,
-                  httpMethod: row.httpMethod,
-                  common: row.common
-                },
-                从api对象中: row.api,
-                设置后的值: permissionForm.api
-              })
             }
           }
         } catch (e) {

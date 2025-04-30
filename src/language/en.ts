@@ -116,7 +116,9 @@ export default {
     subTitle: 'Enter your email to reset your password',
     placeholder: 'Please enter your email',
     submitBtnText: 'Submit',
-    backBtnText: 'Back'
+    backBtnText: 'Back',
+    checkEmail: 'Verify Email',
+    resetPassword: 'Reset Password'
   },
   register: {
     title: 'Create account',
@@ -140,6 +142,19 @@ export default {
     submitBtnText: 'Register',
     hasAccount: 'Already have an account?',
     toLogin: 'To login'
+  },
+  sendEmail: {
+    title: 'Send email verification code',
+    subTitle: 'Please enter your email address, we will send the verification code to your email',
+    placeholder: 'Please enter your email',
+    submitBtnText: 'Send verification code',
+    hasAccount: 'Already have an account?',
+    toLogin: 'To login',
+    emailNullCheck: 'Please enter your email',
+    emailRuleCheck: 'Please enter a valid email address',
+    emailHasCheck: 'The email has been verified, please register directly',
+    emailHasSend: 'The verification code has been sent, please check your email',
+    emailSendFail: 'Failed to send email, please try again later'
   },
   lockScreen: {
     pwdError: 'Password error',

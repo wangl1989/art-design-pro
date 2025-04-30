@@ -7,7 +7,10 @@ import {
   EditUserParams,
   AddUserParams,
   UserRecord,
-  AssignUserPermissionParams
+  ChangePasswordParams,
+  AssignUserPermissionParams,
+  UserLocationResponse,
+  UpdateCurrentUserInfoParams
 } from './model/userModel'
 export class UserService {
   // 登录 - 接收 body 和 header 值
@@ -77,6 +80,22 @@ export class UserService {
     })
   }
 
+  // 删除用户
+  static deleteUser(userId: number) {
+    return request.del<BaseResult>({
+      url: '/api/admin/user/delete',
+      params: { id: userId }
+    })
+  }
+
+  // 当前登录用户更改密码
+  static changePassword(params: ChangePasswordParams) {
+    return request.post<BaseResult>({
+      url: '/api/admin/user/changePassword',
+      params
+    })
+  }
+
   // 额外分配用户权限
   static assignUserPermission(params: AssignUserPermissionParams) {
     return request.post<BaseResult>({
@@ -90,6 +109,21 @@ export class UserService {
     return request.get<BaseResult<number[]>>({
       url: '/api/admin/user/userPermission',
       params: { userId }
+    })
+  }
+
+  // 获取用户定位
+  static getUserLocation() {
+    return request.get<BaseResult<UserLocationResponse>>({
+      url: '/api/admin/user/location'
+    })
+  }
+
+  // 更新当前用户信息
+  static updateCurrentUserInfo(params: UpdateCurrentUserInfoParams) {
+    return request.put<BaseResult>({
+      url: '/api/admin/user/editCurrentUser',
+      params
     })
   }
 }

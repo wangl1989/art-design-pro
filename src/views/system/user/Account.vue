@@ -17,6 +17,7 @@
             />
             <form-input label="手机号" prop="tel" v-model="searchForm.tel as string" />
             <form-input label="邮箱" prop="email" v-model="searchForm.email as string" />
+            <form-input label="位置" prop="location" v-model="searchForm.location as string" />
           </el-row>
         </el-form>
       </template>
@@ -66,15 +67,16 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="创建日期" prop="createDate" sortable v-if="columns[5].show">
+        <el-table-column label="位置" prop="location" v-if="columns[5].show" />
+        <el-table-column label="更新日期" prop="updateDate" sortable v-if="columns[6].show">
           <template #default="scope">
-            {{ formatDate(scope.row.createDate) }}
+            {{ formatDate(scope.row.updateDate) }}
           </template>
         </el-table-column>
         <el-table-column fixed="right" label="操作" width="250px">
           <template #default="scope">
             <button-table type="edit" @click="showDialog('edit', scope.row)" />
-            <button-table type="delete" @click="deleteUser" />
+            <button-table type="delete" @click="deleteUser(scope.row.id)" />
             <button-table type="more" @click="showPermissionDialog(scope.row)" />
           </template>
         </el-table-column>
@@ -211,7 +213,8 @@
     { name: '登录账号', show: true },
     { name: '角色', show: true },
     { name: '状态', show: true },
-    { name: '创建日期', show: true }
+    { name: '位置', show: false },
+    { name: '更新日期', show: true }
   ])
 
   const searchFormRef = ref<FormInstance>()
@@ -219,6 +222,7 @@
     loginName: '',
     tel: '',
     email: '',
+    location: '',
     page: 1,
     limit: 10
   })
@@ -350,14 +354,24 @@
     formData.remarks = ''
   }
 
-  const deleteUser = () => {
+  const deleteUser = (userId: number) => {
     ElMessageBox.confirm('确定要注销该用户吗？', '注销用户', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'error'
-    }).then(() => {
-      ElMessage.success('注销成功')
-      loadUserData() // 重新加载数据
+    }).then(async () => {
+      try {
+        const response = await UserService.deleteUser(userId)
+        if (response.success) {
+          ElMessage.success('注销成功')
+          loadUserData() // 重新加载数据
+        } else {
+          ElMessage.error(response.message || '注销失败')
+        }
+      } catch (error) {
+        console.error('注销用户失败:', error)
+        ElMessage.error('注销用户失败，请重试')
+      }
     })
   }
 
@@ -397,14 +411,8 @@
         trigger: 'blur'
       }
     ],
-    tel: [
-      { required: true, message: '请输入手机号', trigger: 'blur' },
-      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
-    ],
-    email: [
-      { required: true, message: '请输入邮箱', trigger: 'blur' },
-      { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
-    ]
+    tel: [{ pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }],
+    email: [{ type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }]
   })
 
   const formRef = ref<FormInstance>()

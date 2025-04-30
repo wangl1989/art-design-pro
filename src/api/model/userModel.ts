@@ -11,6 +11,8 @@ export interface UserDetailResponse {
   roles: Array<{
     id: number
     name: string
+    isDefault: boolean
+    remarks?: string
   }>
   permissions: Array<{
     id: number
@@ -47,6 +49,7 @@ export interface UserDetailResponse {
   }>
   delFlag: boolean
   deviceId: string | null
+  location?: string | null
   remarks?: string | null
 }
 
@@ -57,6 +60,7 @@ export interface UserListParams {
   loginName?: string // 用户名，模糊搜索
   tel?: string // 手机号，精确搜索
   email?: string // 邮箱，模糊搜索
+  location?: string // 地理位置
   sortByCreateDateAsc?: boolean | null // 根据创建时间排序
   sortByLoginNameAsc?: boolean | null // 根据用户名排序
   sortByUpdateDateAsc?: boolean | null // 根据更新时间排序
@@ -88,6 +92,7 @@ export interface UserRecord {
   roles: Array<{
     id: number
     name: string
+    isDefault: boolean
   }>
 }
 
@@ -117,8 +122,32 @@ export interface AddUserParams {
   remarks?: string
 }
 
+// 更改密码的参数接口
+export interface ChangePasswordParams {
+  oldPwd: string // 旧密码 ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d\W_]{8,20}$
+  newPwd: string // 新密码 ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d\W_]{8,20}$
+}
+
 // 分配用户权限的参数接口
 export interface AssignUserPermissionParams {
   userId: number
   permissionIds: number[]
+}
+
+// 接口定义：用户定位响应
+export interface UserLocationResponse {
+  ip: string
+  province: string
+  city: string
+  district: string
+}
+
+// 更新当前用户信息的参数接口
+export interface UpdateCurrentUserInfoParams {
+  nickName?: string
+  email?: string
+  tel?: string
+  remarks?: string
+  icon?: string
+  location?: string
 }

@@ -53,7 +53,7 @@
 
 <script setup lang="ts">
   import { useRouter } from 'vue-router'
-  import { ref } from 'vue'
+  import { ref, nextTick } from 'vue'
   import { RoutesAlias } from '@/router/modules/routesAlias'
   import { WEB_LINKS } from '@/utils/links'
 
@@ -89,11 +89,11 @@
       path: RoutesAlias.Analysis
     },
     {
-      name: '礼花效果',
-      description: '动画特效展示',
+      name: '图标列表',
+      description: '展示所有图标',
       icon: '&#xe7ed;',
       iconColor: '#7A7FFF',
-      path: RoutesAlias.Fireworks
+      path: RoutesAlias.IconList
     },
     {
       name: '聊天',
@@ -137,17 +137,24 @@
     { name: '注册', path: '/register' },
     { name: '忘记密码', path: '/forget-password' },
     { name: '定价', path: '/template/pricing' },
-    { name: '个人中心', path: '/user/user' },
+    { name: '个人中心', path: '/user/userDetail' },
     { name: '留言管理', path: '/article/comment' }
   ]
 
   const handleAppClick = (path: string) => {
-    if (path.startsWith('http')) {
-      window.open(path, '_blank')
-    } else {
-      router.push(path)
-    }
     popoverRef.value?.hide()
+
+    nextTick(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
+
+      if (path.startsWith('http')) {
+        window.open(path, '_blank')
+      } else {
+        router.push(path)
+      }
+    })
   }
 </script>
 

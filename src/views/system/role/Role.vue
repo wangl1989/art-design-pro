@@ -23,6 +23,13 @@
       <template #default>
         <el-table-column label="角色名称" prop="name" />
         <el-table-column label="描述" prop="remarks" />
+        <el-table-column label="是否默认" prop="isDefault">
+          <template #default="scope">
+            <el-tag :type="scope.row.isDefault ? 'danger' : 'warning'">
+              {{ scope.row.isDefault ? '是' : '否' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" prop="delFlag">
           <template #default="scope">
             <el-tag :type="scope.row.delFlag ? 'primary' : 'info'">
@@ -31,13 +38,13 @@
           </template>
         </el-table-column>
         <el-table-column
-          label="创建时间"
-          prop="createDate"
+          label="更新时间"
+          prop="updateDate"
           sortable
           @sort-change="handleSortChange"
         >
           <template #default="scope">
-            {{ formatDate(scope.row.createDate) }}
+            {{ formatDate(scope.row.updateDate) }}
           </template>
         </el-table-column>
         <el-table-column fixed="right" label="操作" width="100px">
@@ -68,6 +75,9 @@
         </el-form-item>
         <el-form-item label="描述" prop="remarks">
           <el-input v-model="form.remarks" type="textarea" :rows="3" />
+        </el-form-item>
+        <el-form-item label="是否默认" prop="isDefault">
+          <el-switch v-model="form.isDefault" />
         </el-form-item>
         <!-- <el-form-item label="状态">
           <el-switch v-model="form.status" />
@@ -195,7 +205,8 @@
   const form = reactive({
     id: 0,
     name: '',
-    remarks: ''
+    remarks: '',
+    isDefault: false
   })
 
   // 搜索表单
@@ -271,10 +282,12 @@
       form.id = row.id
       form.name = row.name
       form.remarks = row.remarks || ''
+      form.isDefault = row.isDefault
     } else {
       form.id = 0
       form.name = ''
       form.remarks = ''
+      form.isDefault = false
     }
   }
 
@@ -284,7 +297,7 @@
     } else if (item.key === 'edit') {
       showDialog('edit', row)
     } else if (item.key === 'delete') {
-      deleteRole()
+      deleteRole(row)
     }
   }
 
@@ -345,15 +358,29 @@
     }
   }
 
-  const deleteRole = () => {
+  const deleteRole = (row: RoleRecord) => {
     ElMessageBox.confirm('确定删除该角色吗？', '删除确认', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'error'
-    }).then(() => {
-      ElMessage.success('删除成功')
-      loadRoleData() // 重新加载数据
     })
+      .then(async () => {
+        try {
+          const response = await RoleService.deleteRole(row.id)
+          if (response.success) {
+            ElMessage.success('删除成功')
+            loadRoleData() // 重新加载数据
+          } else {
+            ElMessage.error(response.message || '删除失败')
+          }
+        } catch (error) {
+          console.error('删除角色失败:', error)
+          ElMessage.error('删除角色失败，请重试')
+        }
+      })
+      .catch(() => {
+        // 用户取消删除操作
+      })
   }
 
   const handleSubmit = async (formEl: FormInstance | undefined) => {
@@ -366,7 +393,8 @@
             // 调用新增角色API
             const response = await RoleService.addRole({
               name: form.name,
-              remarks: form.remarks
+              remarks: form.remarks,
+              isDefault: form.isDefault
             })
             if (response.success) {
               ElMessage.success('新增成功')
@@ -381,7 +409,8 @@
             const response = await RoleService.updateRole({
               id: form.id,
               name: form.name,
-              remarks: form.remarks
+              remarks: form.remarks,
+              isDefault: form.isDefault
             })
             if (response.success) {
               ElMessage.success('修改成功')

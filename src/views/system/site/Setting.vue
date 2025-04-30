@@ -28,6 +28,9 @@
                 <el-form-item label="系统作者">
                   <el-input v-model="systemData.author" />
                 </el-form-item>
+                <el-form-item label="WebServiceKey">
+                  <el-input v-model="systemData.webServicekey" />
+                </el-form-item>
                 <el-form-item label="文件上传方式">
                   <el-radio-group v-model="systemData.fileUploadType" size="large">
                     <el-tooltip
@@ -50,7 +53,7 @@
                   <upload-img
                     v-model="systemData.logo"
                     :disabled="!isEdit"
-                    :image-url="systemData.logo"
+                    :image-url="getImgUrl(systemData.logo)"
                     :max-size="systemData.maxUpload"
                     width="120px"
                     min-width="120px"
@@ -60,7 +63,7 @@
                   <upload-img
                     v-model="systemData.authorIcon"
                     :disabled="!isEdit"
-                    :image-url="systemData.authorIcon"
+                    :image-url="getImgUrl(systemData.authorIcon)"
                     :max-size="systemData.maxUpload"
                     width="120px"
                     min-width="120px"
@@ -182,6 +185,7 @@
     email: '',
     address: '',
     logo: '',
+    webServicekey: '',
     server: 'Linux',
     myDatabase: '',
     maxUpload: 10,
@@ -221,6 +225,14 @@
       console.error('获取系统设置失败', error)
       ElMessage.error('获取系统设置失败')
     }
+  }
+
+  // 获取图片url
+  const getImgUrl = (url: string | undefined) => {
+    if (url && url.startsWith('upload')) {
+      return `${import.meta.env.VITE_API_URL}/` + url
+    }
+    return url
   }
 
   // 处理操作按钮

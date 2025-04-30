@@ -9,6 +9,7 @@ export interface SystemRecord {
   authorIcon?: string // 作者头像 带预览的图片上传控件
   fileUploadType: string // 文件上传方式 单选，可选值：api接口
   weibo?: string // 微博地址
+  webServicekey?: string // webServicekey key
   qq?: string // QQ号
   git?: string // 码云gitee地址
   github?: string // github地址

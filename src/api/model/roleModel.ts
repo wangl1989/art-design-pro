@@ -8,6 +8,7 @@
 export interface Role {
   id: number
   name: string
+  isDefault: boolean
 }
 
 /**
@@ -17,6 +18,7 @@ export interface RoleRecord {
   id: number
   name: string
   remarks: string
+  isDefault: boolean
   delFlag: number
   createId: number
   updateId: number
@@ -50,12 +52,14 @@ export interface SaveRolePermissionsParams {
 export interface SaveRoleData {
   name: string
   remarks?: string
+  isDefault: boolean
 }
 
 export interface UpdateRoleData {
   id: number
   name: string
   remarks?: string
+  isDefault: boolean
 }
 
 export interface RoleMenusPermissions {

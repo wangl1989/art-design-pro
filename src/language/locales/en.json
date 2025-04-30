@@ -136,7 +136,29 @@
     "subTitle": "Enter your email to reset your password",
     "placeholder": "Please enter your email",
     "submitBtnText": "Submit",
-    "backBtnText": "Back"
+    "backBtnText": "Back",
+    "rule": [
+      "Please enter your email",
+      "Please enter a valid email address",
+      "The verification code has been sent, please check your email",
+      "Failed to send email, please try again later"
+    ]
+  },
+  "forgetCheckEmail": {
+    "title": "check your email",
+    "subTitle1": "code has send to",
+    "subTitle2": "pelease enter code in your email",
+    "resendBtnText": "resent",
+    "checkBtnText": "check",
+    "backBtnText": "back",
+    "rule": [
+      "Please enter your email",
+      "The verification code has been resent",
+      "Failed to send, please try again",
+      "pelease enter code in your email",
+      "Email verified successfully",
+      "Verification failed, please check if the verification code is correct"
+    ]
   },
   "register": {
     "title": "Create account",
@@ -144,20 +166,57 @@
     "placeholder": [
       "Please enter your account",
       "Please enter your password",
-      "Please enter your password again"
+      "Please enter your password again",
+      "Please enter your email"
     ],
     "rule": [
       "Please enter your password again",
       "The two passwords are inconsistent!",
       "The length is 3 to 20 characters",
       "The password length cannot be less than 6 digits",
-      "Please agree to the privacy policy"
+      "Please agree to the privacy policy",
+      "Username must start with a letter, can only contain letters, numbers, underscores, and be 3-10 characters long",
+      "Password must contain 8-20 characters, including at least one uppercase letter, one lowercase letter and one number",
+      "Please enter a valid email address"
     ],
     "agreeText": "I agree",
     "privacyPolicy": "Privacy policy",
     "submitBtnText": "Register",
     "hasAccount": "Already have an account?",
-    "toLogin": "To login"
+    "toLogin": "To login",
+    "success": "Registration successful",
+    "emailVerified": "Your email has been verified",
+    "registerfied": "Registration failed, please try again later"
+  },
+  "sendEmail": {
+    "title": "Send email verification code",
+    "subTitle": "Please enter your email address, we will send the verification code to your email",
+    "placeholder": "Please enter your email",
+    "submitBtnText": "Send verification code",
+    "hasAccount": "Already have an account?",
+    "toLogin": "To login",
+    "rule": [
+      "Please enter your email",
+      "Please enter a valid email address",
+      "The email has been verified, please register directly",
+      "The verification code has been sent, please check your email",
+      "Failed to send email, please try again later"
+    ]
+  },
+  "checkEmail": {
+    "title": "Verify your email",
+    "subTitle1": "The verification code has been sent to",
+    "subTitle2": "Please enter the 6-digit verification code in your email",
+    "resendBtnText": "Resend",
+    "checkBtnText": "Verify",
+    "backBtnText": "Back to login",
+    "rule": [
+      "Email parameter missing, please resend the verification code",
+      "The verification code has been resent",
+      "Failed to send, please try again",
+      "Email verified successfully",
+      "Verification failed, please check if the verification code is correct"
+    ]
   },
   "lockScreen": {
     "pwdError": "Password error",
@@ -337,7 +396,8 @@
       "account": "Account",
       "department": "Department",
       "role": "Role",
-      "userCenter": "User Center"
+      "userCenter": "User Center",
+      "userDetail": "User Detail"
     },
     "menu": {
       "title": "Menu Management",

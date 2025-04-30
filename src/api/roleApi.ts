@@ -58,4 +58,11 @@ export class RoleService {
       data: params
     })
   }
+
+  // 删除角色
+  static deleteRole(roleId: number) {
+    return request.del<BaseResult>({
+      url: '/api/admin/role/delete?id=' + roleId
+    })
+  }
 }

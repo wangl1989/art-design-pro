@@ -112,7 +112,9 @@ export default {
     subTitle: '输入您的电子邮件来重置您的密码',
     placeholder: '请输入您的电子邮件',
     submitBtnText: '提交',
-    backBtnText: '返回'
+    backBtnText: '返回',
+    checkEmail: '验证邮箱',
+    resetPassword: '重置密码'
   },
   register: {
     title: '创建账号',

@@ -24,7 +24,7 @@
             <!-- 检查是否有权限列表 -->
             <div
               v-if="scope.row.meta?.authList && scope.row.meta.authList.length > 0"
-              v-auth="'show_permission_list'"
+              v-auth="'permission_manage'"
             >
               <!-- 权限按钮 -->
               <el-button type="primary" link @click="toggleAuthList(scope.$index)">

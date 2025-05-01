@@ -5,7 +5,14 @@
       <h1 class="title">上传方式配置</h1>
       <h2 class="subtitle">可自由配置本地或云存储方式</h2>
 
-      <el-button v-if="canAddMore" type="primary" class="add-btn" @click="handleAddUpload" v-ripple>
+      <el-button
+        v-if="canAddMore"
+        type="primary"
+        v-auth="'uploadtype_add'"
+        class="add-btn"
+        @click="handleAddUpload"
+        v-ripple
+      >
         新增上传方式
       </el-button>
     </div>
@@ -16,7 +23,7 @@
           <el-card class="upload-card" :class="{ enabled: item.enable }" shadow="never">
             <div class="card-header">
               <div class="header-actions">
-                <span class="edit-icon" @click="handleEditUpload(item)">
+                <span class="edit-icon" v-auth="'uploadtype_edit'" @click="handleEditUpload(item)">
                   <i class="iconfont-sys" v-html="'&#xe816;'"></i>
                 </span>
               </div>
@@ -58,7 +65,13 @@
                 </el-icon>
                 <span>
                   测试图片：
-                  <el-button type="primary" link @click="showImg(item.id)">点我查看</el-button>
+                  <el-button
+                    type="primary"
+                    link
+                    v-auth="'uploadtype_show_test'"
+                    @click="showImg(item.id)"
+                    >点我查看</el-button
+                  >
                 </span>
               </div>
               <div class="feature-item">
@@ -85,6 +98,7 @@
               <el-button
                 :type="item.enable ? 'danger' : 'primary'"
                 class="action-btn"
+                v-auth="'uploadtype_enable'"
                 @click="handleToggleStatus(item)"
                 v-ripple
               >

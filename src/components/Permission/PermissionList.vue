@@ -35,8 +35,18 @@
           </el-table-column>
           <el-table-column label="操作" width="120" align="right">
             <template #default="scope">
-              <span class="action-btn edit-btn" @click="handleEdit(scope.row)">编辑</span>
-              <span class="action-btn delete-btn" @click="handleDelete(scope.row)">删除</span>
+              <span
+                class="action-btn edit-btn"
+                v-auth="'permission_edit'"
+                @click="handleEdit(scope.row)"
+                >编辑</span
+              >
+              <span
+                class="action-btn delete-btn"
+                v-auth="'permission_delete'"
+                @click="handleDelete(scope.row)"
+                >删除</span
+              >
             </template>
           </el-table-column>
         </el-table>

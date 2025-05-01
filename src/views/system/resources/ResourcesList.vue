@@ -49,8 +49,20 @@
       <el-table-column label="上传时间" prop="createDate" />
       <el-table-column label="操作" width="180" fixed="right">
         <template #default="scope">
-          <el-button type="primary" link @click="previewResource(scope.row)">预览</el-button>
-          <el-button type="primary" link @click="copyUrl(scope.row.webUrl)">复制链接</el-button>
+          <el-button
+            type="primary"
+            v-auth="'resource_preview'"
+            link
+            @click="previewResource(scope.row)"
+            >预览</el-button
+          >
+          <el-button
+            type="primary"
+            v-auth="'resource_copylink'"
+            link
+            @click="copyUrl(scope.row.webUrl)"
+            >复制链接</el-button
+          >
           <!-- <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button> -->
         </template>
       </el-table-column>

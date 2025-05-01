@@ -1,6 +1,9 @@
 <template>
   <div class="page-content">
+    <!-- 由于目前Dict.vue已经被修改为直接使用div+搜索表单的方式，
+    我们需要改回使用修改后的TableBar组件 -->
     <table-bar
+      ref="tableBarRef"
       :showTop="false"
       @search="search"
       @reset="resetQuery"
@@ -8,28 +11,57 @@
       :columns="columns"
     >
       <template #top>
-        <el-form :model="queryParams" inline>
-          <el-row :gutter="15">
-            <el-col :xs="19" :sm="12" :lg="6">
+        <el-form
+          :model="queryParams"
+          ref="searchFormRef"
+          inline
+          label-width="80px"
+          class="compact-form"
+        >
+          <el-row :gutter="0">
+            <el-col :span="6">
               <el-form-item label="字典类型:">
-                <el-input v-model="queryParams.type" placeholder="请输入字典类型搜索"></el-input>
+                <el-input
+                  v-model="queryParams.type"
+                  placeholder="请输入字典类型搜索"
+                  style="width: 180px"
+                ></el-input>
               </el-form-item>
             </el-col>
-            <el-col :xs="19" :sm="12" :lg="6">
+            <el-col :span="6">
               <el-form-item label="标签名:">
-                <el-input v-model="queryParams.label" placeholder="请输入标签名搜索"></el-input>
+                <el-input
+                  v-model="queryParams.label"
+                  placeholder="请输入标签名搜索"
+                  style="width: 180px"
+                ></el-input>
               </el-form-item>
             </el-col>
-            <el-col :xs="19" :sm="12" :lg="6">
+            <el-col :span="6">
               <el-form-item label="数据值:">
-                <el-input v-model="queryParams.value" placeholder="请输入数据值搜索"></el-input>
+                <el-input
+                  v-model="queryParams.value"
+                  placeholder="请输入数据值搜索"
+                  style="width: 180px"
+                ></el-input>
               </el-form-item>
+            </el-col>
+            <!-- 搜索按钮列 -->
+            <el-col :span="6" class="search-buttons">
+              <el-button type="primary" @click="search" v-ripple>搜索</el-button>
+              <el-button @click="resetQuery" v-ripple>重置</el-button>
             </el-col>
           </el-row>
         </el-form>
       </template>
+      <!-- 使用新的 search-buttons 插槽 -->
+      <template #search-buttons>
+        <!-- 这里故意留空，按钮已经移到表单内部 -->
+      </template>
       <template #bottom>
-        <el-button type="primary" @click="handleAdd" v-ripple>新增字典</el-button>
+        <el-button type="primary" @click="handleAdd" v-auth="'dict_add'" v-ripple
+          >新增字典</el-button
+        >
       </template>
     </table-bar>
 
@@ -52,16 +84,40 @@
       <el-table-column label="更新时间" prop="updateDate" sortable v-if="columns[6].show" />
       <el-table-column label="操作" fixed="right" width="280" v-if="columns[7].show">
         <template #default="scope">
-          <el-button size="small" type="primary" link @click="handleEdit(scope.row)">
+          <el-button
+            size="small"
+            type="primary"
+            v-auth="'dict_edit'"
+            link
+            @click="handleEdit(scope.row)"
+          >
             编辑
           </el-button>
-          <el-button size="small" type="success" link @click="handleAddByType(scope.row)">
+          <el-button
+            size="small"
+            type="success"
+            v-auth="'dict_type_add'"
+            link
+            @click="handleAddByType(scope.row)"
+          >
             添加该类型字典
           </el-button>
-          <el-button size="small" type="warning" link @click="handleEditType(scope.row)">
+          <el-button
+            size="small"
+            type="warning"
+            v-auth="'dict_edit_type'"
+            link
+            @click="handleEditType(scope.row)"
+          >
             编辑类型
           </el-button>
-          <el-button size="small" type="danger" link @click="handleDelete(scope.row)">
+          <el-button
+            size="small"
+            type="danger"
+            v-auth="'dict_delete'"
+            link
+            @click="handleDelete(scope.row)"
+          >
             删除
           </el-button>
         </template>
@@ -159,6 +215,9 @@
 
   // 加载状态
   const loading = ref(false)
+
+  // TableBar 引用
+  const tableBarRef = ref()
 
   // 字典数据列表
   const dictList = ref<DictRecord[]>([])
@@ -272,9 +331,12 @@
     loadDictList()
   }
 
-  // 列显示设置
-  const changeColumn = (list: any) => {
-    Object.assign(columns, list)
+  // 列显示设置 - 调整参数顺序回 (show, index)
+  const changeColumn = (show: any, index: number) => {
+    // 确保 columns[index] 存在
+    if (columns[index]) {
+      columns[index].show = show
+    }
   }
 
   // 处理分页变化
@@ -467,6 +529,28 @@
   .page-content {
     width: 100%;
     height: 100%;
+  }
+
+  .search-buttons {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    margin-top: 4px;
+
+    .el-button {
+      margin-right: 10px;
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+
+  .compact-form {
+    .el-form-item {
+      margin-right: 0;
+      margin-bottom: 18px;
+    }
   }
 
   .dict-form {

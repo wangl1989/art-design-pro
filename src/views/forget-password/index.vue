@@ -100,18 +100,18 @@
         })
 
         if (response.success) {
-          ElMessage.success(t('forgetPassword.rule[3]'))
+          ElMessage.success(t('forgetPassword.rule[2]'))
           // 跳转到验证码页面
           router.push({
             path: '/forget-password/check-email',
             query: { email: formData.email }
           })
         } else {
-          ElMessage.error(response.message || t('forgetPassword.rule[4]'))
+          ElMessage.error(response.message || t('forgetPassword.rule[3]'))
         }
       } catch (error) {
         console.error('发送重置密码邮件失败:', error)
-        ElMessage.error(t('forgetPassword.rule[4]'))
+        ElMessage.error(t('forgetPassword.rule[3]'))
       } finally {
         loading.value = false
       }

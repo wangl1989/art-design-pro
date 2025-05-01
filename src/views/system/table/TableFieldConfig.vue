@@ -11,15 +11,39 @@
       @update:model-value="(val) => emit('update:visible', val)"
     >
       <div class="table-actions">
-        <el-button type="primary" @click="handleSyncFields" v-ripple>同步字段</el-button>
-        <el-button :type="sortMode ? 'danger' : 'info'" @click="handleFieldSort" v-ripple>{{
-          sortMode ? '退出排序' : '字段排序'
-        }}</el-button>
+        <el-button
+          type="primary"
+          @click="handleSyncFields"
+          v-auth="'tableconfig_sync_field'"
+          v-ripple
+          >同步字段</el-button
+        >
+        <el-button
+          :type="sortMode ? 'danger' : 'info'"
+          @click="handleFieldSort"
+          v-auth="'tableconfig_field_sort'"
+          v-ripple
+          >{{ sortMode ? '退出排序' : '字段排序' }}</el-button
+        >
         <template v-if="sortMode">
-          <el-button type="success" @click="handleSaveSortOrder" v-ripple>保存排序</el-button>
-          <el-button @click="handleCancelSort" v-ripple>取消排序</el-button>
+          <el-button
+            type="success"
+            @click="handleSaveSortOrder"
+            v-auth="'tableconfig_field_sort'"
+            v-ripple
+            >保存排序</el-button
+          >
+          <el-button @click="handleCancelSort" v-auth="'tableconfig_field_sort'" v-ripple
+            >取消排序</el-button
+          >
         </template>
-        <el-button type="success" @click="handlePreviewTable" v-ripple>预览表单</el-button>
+        <el-button
+          type="success"
+          @click="handlePreviewTable"
+          v-auth="'tableconfig_perview_form'"
+          v-ripple
+          >预览表单</el-button
+        >
       </div>
 
       <el-divider />
@@ -114,10 +138,22 @@
                 </el-icon>
                 移动
               </el-button>
-              <el-button v-else type="primary" link @click="handleEditField(scope.row)">
+              <el-button
+                v-else
+                type="primary"
+                link
+                v-auth="'tableconfig_edit_field'"
+                @click="handleEditField(scope.row)"
+              >
                 编辑
               </el-button>
-              <el-button v-if="!sortMode" type="danger" link @click="handleDeleteField(scope.row)">
+              <el-button
+                v-if="!sortMode"
+                type="danger"
+                v-auth="'tableconfig_field_delete'"
+                link
+                @click="handleDeleteField(scope.row)"
+              >
                 删除
               </el-button>
             </template>

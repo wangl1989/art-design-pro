@@ -27,11 +27,21 @@
         </el-form>
       </template>
       <template #bottom>
-        <el-button type="primary" @click="handleAdd" v-ripple>新增任务</el-button>
-        <el-button type="danger" @click="handleBatchDelete" v-ripple>批量删除</el-button>
-        <el-button type="warning" @click="handleBatchPause" v-ripple>批量暂停</el-button>
-        <el-button type="success" @click="handleBatchResume" v-ripple>批量恢复</el-button>
-        <el-button type="info" @click="handleBatchRun" v-ripple>立即执行</el-button>
+        <el-button type="primary" @click="handleAdd" v-auth="'quartzjob_add'" v-ripple
+          >新增任务</el-button
+        >
+        <el-button type="danger" @click="handleBatchDelete" v-auth="'quartzjob_delete'" v-ripple
+          >批量删除</el-button
+        >
+        <el-button type="warning" @click="handleBatchPause" v-auth="'quartzjob_pause'" v-ripple
+          >批量暂停</el-button
+        >
+        <el-button type="success" @click="handleBatchResume" v-auth="'quartzjob_resume'" v-ripple
+          >批量恢复</el-button
+        >
+        <el-button type="info" @click="handleBatchRun" v-auth="'quartzjob_run'" v-ripple
+          >立即执行</el-button
+        >
       </template>
     </table-bar>
 
@@ -69,16 +79,31 @@
       />
       <el-table-column label="操作" fixed="right" width="320" v-if="columns[7].show">
         <template #default="scope">
-          <el-button type="primary" link @click="handleEdit(scope.row)">编辑</el-button>
-          <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
-          <el-button
-            :type="scope.row.status === 0 ? 'warning' : 'success'"
-            link
-            @click="scope.row.status === 0 ? handlePause(scope.row) : handleResume(scope.row)"
+          <el-button type="primary" link v-auth="'quartzjob_edit'" @click="handleEdit(scope.row)"
+            >编辑</el-button
           >
-            {{ scope.row.status === 0 ? '暂停' : '恢复' }}
-          </el-button>
-          <el-button type="info" link @click="handleRun(scope.row)">执行</el-button>
+          <el-button type="danger" link v-auth="'quartzjob_delete'" @click="handleDelete(scope.row)"
+            >删除</el-button
+          >
+          <el-button
+            type="warning"
+            link
+            v-auth="'quartzjob_pause'"
+            v-if="scope.row.status === 0"
+            @click="handlePause(scope.row)"
+            >暂停</el-button
+          >
+          <el-button
+            type="success"
+            link
+            v-auth="'quartzjob_resume'"
+            v-if="scope.row.status !== 0"
+            @click="handleResume(scope.row)"
+            >恢复</el-button
+          >
+          <el-button type="info" link v-auth="'quartzjob_run'" @click="handleRun(scope.row)"
+            >执行</el-button
+          >
         </template>
       </el-table-column>
     </art-table>

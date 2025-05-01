@@ -1,30 +1,86 @@
 <template>
   <div class="page-content">
-    <table-bar
-      :showTop="false"
-      @search="search"
-      @reset="resetForm(searchFormRef)"
-      @changeColumn="changeColumn"
-      :columns="columns"
-    >
-      <template #top>
-        <el-form :model="searchForm" ref="searchFormRef" label-width="82px">
-          <el-row :gutter="20">
-            <form-input
-              label="登录账号"
-              prop="loginName"
-              v-model="searchForm.loginName as string"
-            />
-            <form-input label="手机号" prop="tel" v-model="searchForm.tel as string" />
-            <form-input label="邮箱" prop="email" v-model="searchForm.email as string" />
-            <form-input label="位置" prop="location" v-model="searchForm.location as string" />
+    <div class="custom-table-bar">
+      <div class="search-container" v-show="showSearchWrap">
+        <el-form
+          :model="searchForm"
+          ref="searchFormRef"
+          inline
+          class="search-form"
+          label-width="80px"
+        >
+          <el-row :gutter="8" class="search-row">
+            <el-col :xs="24" :sm="12" :lg="5">
+              <el-form-item label="登录账号:">
+                <el-input
+                  v-model="searchForm.loginName as string"
+                  prop="loginName"
+                  placeholder="请输入登录账号"
+                ></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12" :lg="5">
+              <el-form-item label="手机号:">
+                <el-input
+                  v-model="searchForm.tel as string"
+                  prop="tel"
+                  placeholder="请输入手机号"
+                ></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12" :lg="5">
+              <el-form-item label="邮箱:">
+                <el-input
+                  v-model="searchForm.email as string"
+                  prop="email"
+                  placeholder="请输入邮箱"
+                ></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12" :lg="5">
+              <el-form-item label="位置:">
+                <el-input
+                  v-model="searchForm.location as string"
+                  prop="location"
+                  placeholder="请输入位置"
+                ></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :xs="24" :sm="12" :lg="4" class="search-buttons">
+              <el-button type="primary" @click="search" v-auth="'user_search'" v-ripple
+                >搜索</el-button
+              >
+              <el-button @click="resetForm(searchFormRef)" v-ripple>重置</el-button>
+            </el-col>
           </el-row>
         </el-form>
-      </template>
-      <template #bottom>
-        <el-button @click="showDialog('add')" v-ripple>添加用户</el-button>
-      </template>
-    </table-bar>
+      </div>
+      <div class="tool-container">
+        <div class="left-wrap">
+          <el-button @click="showDialog('add')" v-auth="'user_add'" v-ripple>添加用户</el-button>
+        </div>
+        <div class="right-wrap">
+          <el-button-group>
+            <el-button :icon="Search" @click="isShowSearchWrap()" />
+            <el-button :icon="RefreshRight" @click="loadUserData()" />
+            <el-popover placement="bottom-end" width="100" trigger="hover" @show="showPopover">
+              <el-checkbox-group v-model="colOptions" :min="1">
+                <el-checkbox
+                  v-for="(item, index) in colSelect"
+                  :label="item"
+                  :value="item"
+                  :key="item"
+                  @change="changeColumn($event, index)"
+                />
+              </el-checkbox-group>
+              <template #reference>
+                <el-button :icon="Operation"></el-button>
+              </template>
+            </el-popover>
+          </el-button-group>
+        </div>
+      </div>
+    </div>
 
     <art-table
       :data="tableData"
@@ -75,9 +131,13 @@
         </el-table-column>
         <el-table-column fixed="right" label="操作" width="250px">
           <template #default="scope">
-            <button-table type="edit" @click="showDialog('edit', scope.row)" />
-            <button-table type="delete" @click="deleteUser(scope.row.id)" />
-            <button-table type="more" @click="showPermissionDialog(scope.row)" />
+            <button-table type="edit" v-auth="'user_edit'" @click="showDialog('edit', scope.row)" />
+            <button-table type="delete" v-auth="'user_delete'" @click="deleteUser(scope.row.id)" />
+            <button-table
+              type="more"
+              v-auth="'user_assign'"
+              @click="showPermissionDialog(scope.row)"
+            />
           </template>
         </el-table-column>
       </template>
@@ -170,12 +230,14 @@
   import { onMounted } from 'vue'
   import { useMenuStore } from '@/store/modules/menu'
   import PermissionTree from '@/components/Permission/PermissionTree.vue'
+  import { RefreshRight, Operation, Search } from '@element-plus/icons-vue'
 
   const dialogType = ref('add')
   const dialogVisible = ref(false)
   const loading = ref(false)
   const formLoading = ref(false)
   const submitLoading = ref(false)
+  const showSearchWrap = ref(false)
 
   // 表单数据
   const formData = reactive({
@@ -188,6 +250,11 @@
     roleIds: [] as number[],
     remarks: ''
   })
+
+  // 是否显示搜索区域
+  const isShowSearchWrap = () => {
+    showSearchWrap.value = !showSearchWrap.value
+  }
 
   // 角色选项
   const roleOptions = ref<Role[]>([])
@@ -227,11 +294,44 @@
     limit: 10
   })
 
+  // 用于列选择
+  const colOptions = ref<string[]>([])
+  const colSelect = ref<string[]>([])
+
+  // 显示列选择弹出框
+  const showPopover = () => {
+    if (colSelect.value.length === 0) {
+      let ops: string[] = []
+      columns.forEach((item: any) => {
+        if (item.show) {
+          ops.push(item.name)
+        }
+      })
+      colOptions.value = ops
+
+      let allCols: string[] = []
+      columns.forEach((item: any) => {
+        allCols.push(item.name)
+      })
+      colSelect.value = allCols
+    }
+  }
+
   const resetForm = (formEl: FormInstance | undefined) => {
     if (!formEl) return
     formEl.resetFields()
+    // 重置搜索表单的所有字段为空
+    Object.keys(searchForm).forEach((key) => {
+      if (key !== 'page' && key !== 'limit') {
+        if (typeof searchForm[key as keyof UserListParams] === 'string') {
+          searchForm[key as keyof UserListParams] = '' as any
+        }
+      }
+    })
+    // 重置分页
     searchForm.page = 1
     searchForm.limit = 10
+    // 重新加载数据
     loadUserData()
   }
 
@@ -380,8 +480,8 @@
     loadUserData()
   }
 
-  const changeColumn = (list: any) => {
-    columns.values = list
+  const changeColumn = (show: any, index: number) => {
+    columns[index].show = show
   }
 
   // 处理分页变化
@@ -563,6 +663,50 @@
   .page-content {
     width: 100%;
     height: 100%;
+
+    .custom-table-bar {
+      padding: 0 0 20px;
+
+      .search-container {
+        margin-bottom: 20px;
+      }
+
+      .search-form {
+        width: 100%;
+      }
+
+      .search-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        margin: 0 -4px;
+
+        .el-col {
+          padding-right: 4px;
+          padding-left: 4px;
+        }
+
+        .search-buttons {
+          display: flex;
+          align-items: flex-end;
+          margin-bottom: 20px;
+
+          .el-button {
+            margin-right: 10px;
+
+            &:last-child {
+              margin-right: 0;
+            }
+          }
+        }
+      }
+
+      .tool-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
 
     .user {
       .avatar {

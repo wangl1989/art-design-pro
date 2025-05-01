@@ -3,10 +3,18 @@
     <PageWrapper title="系统设置">
       <div class="system-form-wrapper">
         <div class="action-buttons">
-          <el-button v-if="!isEdit" type="primary" @click="handleAction('edit')">编辑</el-button>
+          <el-button
+            v-if="!isEdit"
+            type="primary"
+            v-auth="'site_edit'"
+            @click="handleAction('edit')"
+            >编辑</el-button
+          >
           <template v-else>
-            <el-button type="success" @click="handleAction('save')">保存</el-button>
-            <el-button @click="handleAction('cancel')">取消</el-button>
+            <el-button type="success" v-auth="'site_save'" @click="handleAction('save')"
+              >保存</el-button
+            >
+            <el-button v-auth="'site_cancle'" @click="handleAction('cancel')">取消</el-button>
           </template>
         </div>
 

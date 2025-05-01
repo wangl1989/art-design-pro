@@ -1,6 +1,7 @@
 <template>
   <div class="page-content">
     <table-bar
+      ref="tableBarRef"
       :showTop="false"
       @search="search"
       @reset="resetQuery"
@@ -8,14 +9,20 @@
       :columns="columns"
     >
       <template #top>
-        <el-form :model="queryParams" inline>
-          <el-row :gutter="15">
-            <el-col :xs="19" :sm="12" :lg="8">
+        <el-form
+          :model="queryParams"
+          ref="searchFormRef"
+          inline
+          label-width="100px"
+          class="compact-form"
+        >
+          <el-row :gutter="0">
+            <el-col :span="6">
               <el-form-item label="数据库名称:">
                 <el-select
                   v-model="queryParams.schemaName"
                   placeholder="请选择数据库名称"
-                  style="width: 260px !important"
+                  style="width: 260px"
                   @change="handleSchemaChange"
                 >
                   <el-option
@@ -27,20 +34,32 @@
                 </el-select>
               </el-form-item>
             </el-col>
-            <el-col :xs="19" :sm="12" :lg="8">
+            <el-col :span="7">
               <el-form-item label="表格名称:">
                 <el-input
                   v-model="queryParams.tableName"
                   placeholder="请输入表格名称搜索"
+                  style="width: 260px"
                 ></el-input>
               </el-form-item>
+            </el-col>
+            <el-col :span="6" class="search-buttons">
+              <el-button type="primary" @click="search" v-ripple>搜索</el-button>
+              <el-button @click="resetQuery" v-ripple>重置</el-button>
             </el-col>
           </el-row>
         </el-form>
       </template>
+      <template #search-buttons>
+        <!-- 这里故意留空，按钮已经移到表单内部 -->
+      </template>
       <template #bottom>
-        <el-button type="primary" @click="handleAdd" v-ripple>新增表格</el-button>
-        <el-button type="danger" @click="handleBatchDelete" v-ripple>批量删除</el-button>
+        <el-button type="primary" @click="handleAdd" v-auth="'table_add'" v-ripple
+          >新增表格</el-button
+        >
+        <el-button type="danger" @click="handleBatchDelete" v-auth="'table_batch_delete'" v-ripple
+          >批量删除</el-button
+        >
       </template>
     </table-bar>
 
@@ -82,9 +101,20 @@
       </el-table-column>
       <el-table-column label="操作" fixed="right" width="220" v-if="columns[7].show">
         <template #default="scope">
-          <el-button type="primary" link @click="handleEdit(scope.row)"> 编辑 </el-button>
-          <el-button type="info" link @click="handleManageFields(scope.row)"> 管理字段 </el-button>
-          <el-button type="danger" link @click="handleDelete(scope.row)"> 删除 </el-button>
+          <el-button type="primary" link v-auth="'table_edit'" @click="handleEdit(scope.row)">
+            编辑
+          </el-button>
+          <el-button
+            type="info"
+            link
+            v-auth="'field_manage'"
+            @click="handleManageFields(scope.row)"
+          >
+            管理字段
+          </el-button>
+          <el-button type="danger" link v-auth="'table_delete'" @click="handleDelete(scope.row)">
+            删除
+          </el-button>
         </template>
       </el-table-column>
     </art-table>
@@ -140,39 +170,47 @@
           <el-divider content-position="center">字段设置</el-divider>
           <div class="field-header">
             <div style="flex: 1">
-              <el-button type="primary" link @click="addFieldRow">
+              <el-button type="primary" link v-auth="'field_add'" @click="addFieldRow">
                 <el-icon><Plus /></el-icon> 添加字段
               </el-button>
             </div>
           </div>
 
-          <el-table :data="formData.fieldList" border stripe class="field-table">
-            <el-table-column label="字段名称" min-width="150">
-              <template #default="scope">
+          <!-- 新增：字段列表容器 -->
+          <div class="field-list-container">
+            <!-- 新增：手动添加表头 -->
+            <div class="field-list-header field-row">
+              <div class="field-item field-name">字段名称</div>
+              <div class="field-item field-type">字段类型</div>
+              <div class="field-item field-length">字段长度</div>
+              <div class="field-item field-nullable">不是 null</div>
+              <div class="field-item field-comment">字段注释</div>
+              <div class="field-item field-action">操作</div>
+            </div>
+
+            <!-- 修改：使用 v-for 循环渲染每一行 -->
+            <div v-for="(field, index) in formData.fieldList" :key="index" class="field-row">
+              <!-- 字段名称 -->
+              <div class="field-item field-name">
                 <el-form-item
-                  :prop="`fieldList.${scope.$index}.columnName`"
+                  :prop="`fieldList.${index}.columnName`"
                   :rules="[
                     { required: true, message: '请输入字段名称', trigger: 'blur' },
                     { max: 64, message: '长度不能超过64个字符', trigger: 'blur' }
                   ]"
                   class="no-margin"
                 >
-                  <el-input v-model="scope.row.columnName" placeholder="请输入字段名称" />
+                  <el-input v-model="field.columnName" placeholder="请输入字段名称" />
                 </el-form-item>
-              </template>
-            </el-table-column>
-            <el-table-column label="字段类型" min-width="150">
-              <template #default="scope">
+              </div>
+              <!-- 字段类型 -->
+              <div class="field-item field-type">
                 <el-form-item
-                  :prop="`fieldList.${scope.$index}.type`"
+                  :prop="`fieldList.${index}.type`"
                   :rules="[{ required: true, message: '请选择字段类型', trigger: 'change' }]"
                   class="no-margin"
                 >
-                  <el-select
-                    v-model="scope.row.type"
-                    placeholder="请选择字段类型"
-                    style="width: 100%"
-                  >
+                  <el-select v-model="field.type" placeholder="请选择字段类型" style="width: 100%">
                     <el-option label="varchar" value="varchar" />
                     <el-option label="int" value="int" />
                     <el-option label="bigint" value="bigint" />
@@ -187,16 +225,15 @@
                     <el-option label="blob" value="blob" />
                   </el-select>
                 </el-form-item>
-              </template>
-            </el-table-column>
-            <el-table-column label="字段长度" min-width="100">
-              <template #default="scope">
+              </div>
+              <!-- 字段长度 -->
+              <div class="field-item field-length">
                 <el-form-item
-                  :prop="`fieldList.${scope.$index}.length`"
+                  :prop="`fieldList.${index}.length`"
                   :rules="[
                     { type: 'number', message: '长度必须为数字', trigger: 'blur' },
                     {
-                      required: needLength(scope.row.type),
+                      required: needLength(field.type),
                       message: '请输入字段长度',
                       trigger: 'blur'
                     }
@@ -204,49 +241,44 @@
                   class="no-margin"
                 >
                   <el-input-number
-                    v-model="scope.row.length"
+                    v-model="field.length"
                     placeholder="请输入长度"
                     style="width: 100%"
                     :min="1"
-                    :disabled="!needLength(scope.row.type)"
+                    :disabled="!needLength(field.type)"
+                    controls-position="right"
                   />
                 </el-form-item>
-              </template>
-            </el-table-column>
-            <el-table-column label="允许为空" min-width="100">
-              <template #default="scope">
-                <el-form-item :prop="`fieldList.${scope.$index}.isNullable`" class="no-margin">
-                  <el-select
-                    v-model="scope.row.isNullable"
-                    placeholder="是否可空"
-                    style="width: 100%"
-                  >
-                    <el-option label="是" value="YES" />
-                    <el-option label="否" value="NO" />
-                  </el-select>
+              </div>
+              <!-- 允许为空 -->
+              <div class="field-item field-nullable">
+                <el-form-item :prop="`fieldList.${index}.isNullable`" class="no-margin">
+                  <el-switch
+                    v-model="field.isNullable"
+                    :active-value="true"
+                    :inactive-value="false"
+                  />
                 </el-form-item>
-              </template>
-            </el-table-column>
-            <el-table-column label="字段注释" min-width="200">
-              <template #default="scope">
-                <el-form-item :prop="`fieldList.${scope.$index}.comment`" class="no-margin">
-                  <el-input v-model="scope.row.comment" placeholder="请输入字段注释" />
+              </div>
+              <!-- 字段注释 -->
+              <div class="field-item field-comment">
+                <el-form-item :prop="`fieldList.${index}.comment`" class="no-margin">
+                  <el-input v-model="field.comment" placeholder="请输入字段注释" />
                 </el-form-item>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="80">
-              <template #default="scope">
+              </div>
+              <!-- 操作 -->
+              <div class="field-item field-action">
                 <el-button
                   type="danger"
                   link
-                  @click="removeFieldRow(scope.$index)"
+                  :icon="Close"
+                  v-auth="'field_delete'"
+                  @click="removeFieldRow(index)"
                   :disabled="formData.fieldList.length <= 1"
-                >
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
+                />
+              </div>
+            </div>
+          </div>
         </template>
       </el-form>
       <template #footer>
@@ -269,7 +301,7 @@
 <script setup lang="ts">
   import { ref, reactive, onMounted } from 'vue'
   import { ElMessage, ElMessageBox } from 'element-plus'
-  import { Plus } from '@element-plus/icons-vue'
+  import { Plus, Close } from '@element-plus/icons-vue'
   import { TableService as TableConfigService } from '@/api/tableConfigApi'
   import { TableService } from '@/api/tableApi'
   import {
@@ -283,6 +315,11 @@
   import { formatDate } from '@/utils/date'
   // 引入TableField组件
   import TableField from './TableField.vue'
+
+  // 表格栏引用
+  const tableBarRef = ref()
+  // 搜索表单引用
+  const searchFormRef = ref<FormInstance>()
 
   // 加载状态
   const loading = ref(false)
@@ -656,17 +693,137 @@
     height: 100%;
   }
 
+  /* 紧凑表单样式 */
+  .compact-form {
+    .el-form-item {
+      margin-right: 0;
+      margin-bottom: 18px;
+    }
+  }
+
+  /* 搜索按钮区域样式 */
+  .search-buttons {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    margin-top: 4px;
+
+    .el-button {
+      margin-right: 10px;
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+
+  .field-form {
+    margin-bottom: 15px;
+  }
+
   .field-header {
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
   }
 
-  .field-table {
-    margin-bottom: 20px;
+  // 新增：字段列表容器和行样式
+  .field-list-container {
+    border: 1px solid #ebeef5; // 模拟表格边框
+    border-bottom: none; // 最后一行边框单独处理
   }
 
-  :deep(.el-form-item.no-margin) {
+  .field-row {
+    display: flex;
+    align-items: center; // 垂直居中对齐
+    min-height: 55px; // 保持与之前表格行高一致
+    padding: 5px 0; // 添加一些垂直内边距
+    border-bottom: 1px solid #ebeef5;
+
+    &:last-child {
+      border-bottom: 1px solid #ebeef5; // 确保最后一行也有底部边框
+    }
+  }
+
+  .field-list-header {
+    min-height: 40px; // 表头可以矮一些
+    padding: 5px 0;
+    font-weight: bold;
+    color: #606266;
+    background-color: #fafafa; // 模拟表头背景色
+  }
+
+  .field-item {
+    box-sizing: border-box; // 边框和内边距包含在宽度内
+    padding: 0 10px; // 添加左右内边距
+  }
+
+  // 定义各列宽度（可以根据需要调整）
+  .field-name {
+    flex: 0 0 150px;
+  } // 固定宽度
+  .field-type {
+    flex: 0 0 150px;
+  }
+
+  .field-length {
+    flex: 0 0 120px;
+  }
+
+  .field-nullable {
+    flex: 0 0 80px; // 修改：减小宽度
+    text-align: center; // 开关居中显示
+  }
+
+  .field-comment {
+    flex: 1;
+    min-width: 180px;
+  } // 自动伸缩，最小宽度
+  .field-action {
+    flex: 0 0 60px; // 修改：调整宽度以适应图标按钮
+    text-align: center;
+  }
+
+  // 确保 el-form-item 没有额外的 margin
+  :deep(.field-item .el-form-item.no-margin) {
+    width: 100%; // 确保 form-item 占满其容器
     margin-bottom: 0;
+  }
+
+  // 新增：覆盖 el-form-item__content 的内联 margin-left
+  :deep(.field-item .el-form-item__content) {
+    margin-left: 0 !important;
+  }
+
+  // 确保输入控件宽度100%
+  :deep(.field-item .el-input),
+  :deep(.field-item .el-input-number),
+  :deep(.field-item .el-select) {
+    width: 100%;
+  }
+
+  // 确保数字输入框文本左对齐
+  :deep(.field-item .el-input-number .el-input__inner) {
+    text-align: left;
+  }
+
+  // 确保删除按钮垂直居中且无多余边距
+  :deep(.field-action .el-button) {
+    margin: 0;
+  }
+
+  // 确保对话框内容不会溢出
+  :deep(.el-dialog__body) {
+    max-height: 65vh;
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  // 新增：确保开关在 FormItem 内垂直居中 (如果需要)
+  :deep(.field-nullable .el-form-item__content) {
+    display: flex;
+    align-items: center;
+    justify-content: center; // 水平居中
+    height: 100%; // 确保占满 FormItem 高度以便垂直居中
   }
 </style>

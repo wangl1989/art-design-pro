@@ -1,6 +1,7 @@
 <template>
   <div class="page-content">
     <table-bar
+      ref="tableBarRef"
       :showTop="false"
       @search="search"
       @reset="resetQuery"
@@ -8,52 +9,82 @@
       :columns="columns"
     >
       <template #top>
-        <el-form :model="queryParams" inline>
-          <el-row :gutter="15">
-            <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item>
+        <el-form
+          :model="queryParams"
+          ref="searchFormRef"
+          inline
+          label-width="80px"
+          class="compact-form"
+        >
+          <el-row :gutter="0">
+            <el-col :span="5">
+              <el-form-item label="表格名称:">
                 <el-input
                   v-model="queryParams.tableName"
                   placeholder="请输入表格名称搜索"
+                  style="width: 180px"
                 ></el-input>
               </el-form-item>
             </el-col>
-            <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item>
+            <el-col :span="5">
+              <el-form-item label="数据库名:">
                 <el-input
                   v-model="queryParams.schemaName"
                   placeholder="请输入数据库名称搜索"
+                  style="width: 180px"
                 ></el-input>
               </el-form-item>
             </el-col>
-            <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item>
+            <el-col :span="5">
+              <el-form-item label="业务名称:">
                 <el-input
                   v-model="queryParams.businessName"
                   placeholder="请输入业务名称搜索"
+                  style="width: 180px"
                 ></el-input>
               </el-form-item>
             </el-col>
-            <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item>
+            <el-col :span="5">
+              <el-form-item label="配置状态:">
                 <el-select
                   v-model="queryParams.delFlag"
                   placeholder="请选择配置状态"
                   clearable
-                  style="width: 140px"
+                  style="width: 180px"
                 >
                   <el-option label="正常" :value="false"></el-option>
                   <el-option label="已删除" :value="true"></el-option>
                 </el-select>
               </el-form-item>
             </el-col>
+            <el-col :span="4" class="search-buttons">
+              <el-button type="primary" @click="search" v-ripple>搜索</el-button>
+              <el-button @click="resetQuery" v-ripple>重置</el-button>
+            </el-col>
           </el-row>
         </el-form>
       </template>
+      <template #search-buttons>
+        <!-- 这里故意留空，按钮已经移到表单内部 -->
+      </template>
       <template #bottom>
-        <el-button type="primary" @click="handleAdd" v-ripple>新增表格配置</el-button>
-        <el-button type="danger" @click="handleBatchDelete" v-ripple>批量删除</el-button>
-        <el-button type="success" @click="handleDownloadCode" v-ripple>下载源码</el-button>
+        <el-button type="primary" @click="handleAdd" v-auth="'tableconfig_add'" v-ripple
+          >新增表格配置</el-button
+        >
+        <el-button
+          type="danger"
+          @click="handleBatchDelete"
+          v-auth="'tableconfig_batch_delete'"
+          v-ripple
+          >批量删除</el-button
+        >
+        <el-button
+          type="success"
+          @click="handleDownloadCode"
+          v-auth="'tableconfig_download'"
+          v-ripple
+          >下载源码</el-button
+        >
       </template>
     </table-bar>
 
@@ -85,7 +116,12 @@
       <el-table-column label="可配置字段" prop="fieldCount" v-if="columns[9].show">
         <template #default="scope">
           <div v-if="scope.row.fieldCount > 0">
-            <el-button type="primary" link @click="openFieldConfig(scope.row)">
+            <el-button
+              type="primary"
+              link
+              v-auth="'tableconfig_config_field'"
+              @click="openFieldConfig(scope.row)"
+            >
               共 {{ scope.row.fieldCount }} 个字段
             </el-button>
           </div>
@@ -107,21 +143,40 @@
       </el-table-column>
       <el-table-column label="操作" fixed="right" width="220" v-if="columns[13].show">
         <template #default="scope">
-          <el-button type="primary" link @click="handleEdit(scope.row)" v-if="!scope.row.delFlag">
+          <el-button
+            type="primary"
+            link
+            v-auth="'tableconfig_edit'"
+            @click="handleEdit(scope.row)"
+            v-if="!scope.row.delFlag"
+          >
             编辑
           </el-button>
           <el-button
             type="info"
             link
+            v-auth="'tableconfig_sync_field'"
             @click="handleSyncFields(scope.row)"
             v-if="!scope.row.delFlag"
           >
             同步字段
           </el-button>
-          <el-button type="danger" link @click="handleDelete(scope.row)" v-if="!scope.row.delFlag">
+          <el-button
+            type="danger"
+            link
+            v-auth="'tableconfig_delete'"
+            @click="handleDelete(scope.row)"
+            v-if="!scope.row.delFlag"
+          >
             删除
           </el-button>
-          <el-button type="success" link @click="handleRecover(scope.row)" v-if="scope.row.delFlag">
+          <el-button
+            type="success"
+            link
+            v-auth="'tableconfig_recover'"
+            @click="handleRecover(scope.row)"
+            v-if="scope.row.delFlag"
+          >
             恢复
           </el-button>
         </template>
@@ -235,6 +290,11 @@
   import { formatDate } from '@/utils/date'
   import TableFieldConfig from './TableFieldConfig.vue'
   import FileSaver from 'file-saver'
+
+  // 表格栏引用
+  const tableBarRef = ref()
+  // 搜索表单引用
+  const searchFormRef = ref<FormInstance>()
 
   // 加载状态
   const loading = ref(false)
@@ -729,5 +789,27 @@
   .page-content {
     width: 100%;
     height: 100%;
+  }
+
+  .search-buttons {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    margin-top: 4px;
+
+    .el-button {
+      margin-right: 10px;
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+
+  .compact-form {
+    .el-form-item {
+      margin-right: 0;
+      margin-bottom: 18px;
+    }
   }
 </style>

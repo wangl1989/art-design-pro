@@ -3,8 +3,9 @@
     <div class="top-wrap" v-show="showSearchWrap">
       <slot name="top"> </slot>
       <div class="buttons">
-        <el-button type="primary" @click="search" v-ripple>搜索</el-button>
-        <el-button @click="reset" v-ripple>重置</el-button>
+        <slot name="search-buttons">
+          <!-- 如果用户没有提供自定义按钮，则不显示任何内容 -->
+        </slot>
       </div>
     </div>
     <div class="bottom-wrap" v-if="showBottom">
@@ -29,6 +30,7 @@
             width="100"
             trigger="hover"
             @show="showPopover"
+            @hide="handlePopoverHide"
             v-if="layout.indexOf('column') !== -1"
           >
             <el-checkbox-group v-model="colOptions" :min="1">
@@ -53,6 +55,7 @@
 <script setup lang="ts">
   import { useCommon } from '@/composables/useCommon'
   import { Search, RefreshRight, Operation } from '@element-plus/icons-vue'
+  import { nextTick } from 'vue'
 
   const emit = defineEmits(['search', 'reset', 'changeColumn'])
 
@@ -125,18 +128,45 @@
       }
     })
 
-    console.log(columns)
-
     emit('changeColumn', columns)
   }
 
+  // 供外部调用的搜索方法 - 通过 ref 或在 search-buttons 插槽中使用
   const search = () => {
     emit('search')
   }
 
+  // 供外部调用的重置方法 - 通过 ref 或在 search-buttons 插槽中使用
   const reset = () => {
     emit('reset')
   }
+
+  // 处理 popover 隐藏前清除焦点
+  const handlePopoverHide = () => {
+    // 确保在 popover 隐藏前，清除内部元素的焦点
+    nextTick(() => {
+      // 尝试让当前活动元素失焦
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
+
+      // 特别处理列设置 popover 中的复选框
+      const checkboxes = document.querySelectorAll('.el-checkbox__original')
+      checkboxes.forEach((checkbox) => {
+        if (checkbox instanceof HTMLElement) {
+          checkbox.blur()
+        }
+      })
+    })
+  }
+
+  // 暴露方法给外部组件使用
+  defineExpose({
+    search,
+    reset,
+    isShowSearchWrap,
+    refresh
+  })
 </script>
 
 <style lang="scss" scoped>

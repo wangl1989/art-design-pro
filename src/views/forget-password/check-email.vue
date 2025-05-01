@@ -38,8 +38,8 @@
             <el-button text :disabled="countdown > 0" @click="resendCode">
               {{
                 countdown > 0
-                  ? `$t('forgetCheckEmail.resendBtnText') (${countdown}s)`
-                  : $t('forgetCheckEmail.resendBtnText')
+                  ? `${t('forgetCheckEmail.resendBtnText')} (${countdown}s)`
+                  : t('forgetCheckEmail.resendBtnText')
               }}
             </el-button>
           </div>

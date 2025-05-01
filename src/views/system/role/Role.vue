@@ -7,7 +7,7 @@
       <div style="width: 12px"></div>
       <el-col :xs="24" :sm="12" :lg="6" class="el-col2">
         <el-button v-ripple @click="loadRoleData">搜索</el-button>
-        <el-button @click="showDialog('add')" v-ripple>新增角色</el-button>
+        <el-button @click="showDialog('add')" v-auth="'role_add'" v-ripple>新增角色</el-button>
       </el-col>
     </el-row>
 
@@ -47,18 +47,15 @@
             {{ formatDate(scope.row.updateDate) }}
           </template>
         </el-table-column>
-        <el-table-column fixed="right" label="操作" width="100px">
+        <el-table-column fixed="right" label="操作" width="250px">
           <template #default="scope">
-            <el-row>
-              <button-more
-                :list="[
-                  { key: 'permission', label: '菜单权限' },
-                  { key: 'edit', label: '编辑角色' },
-                  { key: 'delete', label: '删除角色' }
-                ]"
-                @click="buttonMoreClick($event, scope.row)"
-              />
-            </el-row>
+            <button-table type="edit" v-auth="'role_edit'" @click="showDialog('edit', scope.row)" />
+            <button-table type="delete" v-auth="'role_delete'" @click="deleteRole(scope.row.id)" />
+            <button-table
+              type="more"
+              v-auth="'role_assign'"
+              @click="showPermissionDialog(scope.row)"
+            />
           </template>
         </el-table-column>
       </template>
@@ -111,7 +108,6 @@
 </template>
 
 <script setup lang="ts">
-  import { ButtonMoreItem } from '@/components/Form/ButtonMore.vue'
   import { useMenuStore } from '@/store/modules/menu'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import type { FormInstance, FormRules } from 'element-plus'
@@ -288,16 +284,6 @@
       form.name = ''
       form.remarks = ''
       form.isDefault = false
-    }
-  }
-
-  const buttonMoreClick = (item: ButtonMoreItem, row: RoleRecord) => {
-    if (item.key === 'permission') {
-      showPermissionDialog(row)
-    } else if (item.key === 'edit') {
-      showDialog('edit', row)
-    } else if (item.key === 'delete') {
-      deleteRole(row)
     }
   }
 

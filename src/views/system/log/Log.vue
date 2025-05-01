@@ -1,6 +1,7 @@
 <template>
   <div class="page-content">
     <table-bar
+      ref="tableBarRef"
       :showTop="false"
       @search="search"
       @reset="resetQuery"
@@ -8,25 +9,39 @@
       :columns="columns"
     >
       <template #top>
-        <el-form :model="queryParams" inline>
-          <el-row :gutter="15">
-            <el-col :xs="19" :sm="12" :lg="6">
+        <el-form
+          :model="queryParams"
+          ref="searchFormRef"
+          inline
+          label-width="80px"
+          class="compact-form"
+        >
+          <el-row :gutter="0">
+            <el-col :span="6">
               <el-form-item label="操作用户:">
-                <el-input v-model="queryParams.username" placeholder="请输入用户名搜索"></el-input>
+                <el-input
+                  v-model="queryParams.username"
+                  placeholder="请输入用户名搜索"
+                  style="width: 180px"
+                ></el-input>
               </el-form-item>
             </el-col>
-            <el-col :xs="19" :sm="12" :lg="6">
+            <el-col :span="6">
               <el-form-item label="操作标题:">
-                <el-input v-model="queryParams.title" placeholder="请输入日志标题搜索"></el-input>
+                <el-input
+                  v-model="queryParams.title"
+                  placeholder="请输入日志标题搜索"
+                  style="width: 180px"
+                ></el-input>
               </el-form-item>
             </el-col>
-            <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item label="请选择请求类型:">
+            <el-col :span="6">
+              <el-form-item label="请求类型:">
                 <el-select
                   v-model="queryParams.httpMethod"
                   placeholder="请选择请求类型"
                   clearable
-                  style="width: 200px"
+                  style="width: 180px"
                 >
                   <el-option label="GET" value="GET"></el-option>
                   <el-option label="POST" value="POST"></el-option>
@@ -35,8 +50,15 @@
                 </el-select>
               </el-form-item>
             </el-col>
+            <el-col :span="6" class="search-buttons">
+              <el-button type="primary" @click="search" v-ripple>搜索</el-button>
+              <el-button @click="resetQuery" v-ripple>重置</el-button>
+            </el-col>
           </el-row>
         </el-form>
+      </template>
+      <template #search-buttons>
+        <!-- 这里故意留空，按钮已经移到表单内部 -->
       </template>
       <template #bottom>
         <el-button type="danger" @click="handleDelete" v-ripple>批量删除</el-button>
@@ -340,12 +362,37 @@
   onMounted(() => {
     loadLogList()
   })
+
+  // TableBar 引用
+  const tableBarRef = ref()
 </script>
 
 <style lang="scss" scoped>
   .page-content {
     width: 100%;
     height: 100%;
+  }
+
+  .search-buttons {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    margin-top: 4px;
+
+    .el-button {
+      margin-right: 10px;
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+  }
+
+  .compact-form {
+    .el-form-item {
+      margin-right: 0;
+      margin-bottom: 18px;
+    }
   }
 
   .json-viewer {

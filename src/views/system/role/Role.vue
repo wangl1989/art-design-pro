@@ -2,11 +2,11 @@
   <div class="page-content">
     <el-row>
       <el-col :xs="24" :sm="12" :lg="6">
-        <el-input v-model="searchForm.name" placeholder="角色名称"></el-input>
+        <el-input v-model="searchForm.name" placeholder="请输入角色名称"></el-input>
       </el-col>
       <div style="width: 12px"></div>
       <el-col :xs="24" :sm="12" :lg="6" class="el-col2">
-        <el-button v-ripple @click="loadRoleData">搜索</el-button>
+        <el-button v-ripple @click="loadRoleData" v-auth="'role_search'">搜索</el-button>
         <el-button @click="showDialog('add')" v-auth="'role_add'" v-ripple>新增角色</el-button>
       </el-col>
     </el-row>
@@ -49,11 +49,11 @@
         </el-table-column>
         <el-table-column fixed="right" label="操作" width="250px">
           <template #default="scope">
-            <button-table type="edit" v-auth="'role_edit'" @click="showDialog('edit', scope.row)" />
-            <button-table type="delete" v-auth="'role_delete'" @click="deleteRole(scope.row.id)" />
-            <button-table
+            <ArtButtonTable type="edit" auth="role_edit" @click="showDialog('edit', scope.row)" />
+            <ArtButtonTable type="delete" auth="role_delete" @click="deleteRole(scope.row.id)" />
+            <ArtButtonTable
               type="more"
-              v-auth="'role_assign'"
+              auth="role_assign"
               @click="showPermissionDialog(scope.row)"
             />
           </template>
@@ -119,7 +119,7 @@
 
   const dialogVisible = ref(false)
   const permissionDialog = ref(false)
-  const menuList = computed(() => useMenuStore().getMenuList)
+  const { menuList } = storeToRefs(useMenuStore())
   const loading = ref(false)
 
   // 权限树引用

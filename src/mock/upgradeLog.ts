@@ -1,4 +1,85 @@
+// requireReLogin: true // 需要重新登录
+
 export const upgradeLogList = ref([
+  {
+    version: 'v2.2.66',
+    title: '表格增加大小控制',
+    date: '2025-04-30',
+    status: 'complete',
+    statusText: '完成',
+    requireReLogin: true
+  },
+  {
+    version: 'v2.2.65',
+    title: '优化 Element UI 组件高度',
+    date: '2025-04-30',
+    status: 'complete',
+    statusText: '完成'
+  },
+  {
+    version: 'v2.2.64',
+    title: '表格搜索模块重构、表格增加列设置、拖拽、刷新、全屏功能',
+    date: '2025-04-29',
+    status: 'complete',
+    statusText: '完成'
+  },
+  {
+    version: 'v2.2.63',
+    title: 'el-tree-select 样式优化',
+    date: '2025-04-27',
+    status: 'complete',
+    statusText: '完成'
+  },
+  {
+    version: 'v2.2.62',
+    title: '优化聊天窗口滚动体验',
+    date: '2025-04-27',
+    status: 'complete',
+    statusText: '完成'
+  },
+  {
+    version: 'v2.2.61',
+    title: '修复拖拽验证重置bug',
+    date: '2025-04-27',
+    status: 'complete',
+    statusText: '完成'
+  },
+  {
+    version: 'v2.2.60',
+    title: '修复移动端图标选择器显示问题',
+    date: '2025-04-27',
+    status: 'complete',
+    statusText: '完成'
+  },
+  {
+    version: 'v2.2.59',
+    title: '修复富文本编辑器样式问题、修复顶部菜单 isHide 未生效 bug',
+    date: '2025-04-24',
+    status: 'complete',
+    statusText: '完成'
+  },
+  {
+    version: 'v2.2.58',
+    title: '系统组件库文件分类优化和文件名称优化',
+    date: '2025-04-15',
+    status: 'complete',
+    statusText: '完成'
+  },
+  {
+    version: 'v2.2.57',
+    title: '修复双列菜单下 isHide 属性不生效 bug',
+    date: '2025-04-13',
+    status: 'complete',
+    statusText: '完成'
+  },
+  {
+    version: 'v2.2.56',
+    title: 'pinia 升级到 3.0.2，并采用 setup 语法',
+    date: '2025-04-12',
+    status: 'complete',
+    statusText: '完成',
+    requireReLogin: true
+  },
   {
     version: 'v2.2.55',
     title: '全局搜索支持多层嵌套搜索',
@@ -140,7 +221,7 @@ export const upgradeLogList = ref([
     date: '2025-02-26',
     status: 'complete',
     statusText: '完成',
-    requireReLogin: true // 需要重新登录
+    requireReLogin: true
   },
   {
     version: 'v2.2.4',
@@ -168,7 +249,7 @@ export const upgradeLogList = ref([
     date: '2025-02-17',
     status: 'complete',
     statusText: '完成',
-    requireReLogin: true // 需要重新登录
+    requireReLogin: true
   },
   {
     version: 'v2.2.0',

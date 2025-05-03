@@ -32,7 +32,7 @@
               </el-button>
 
               <!-- 自定义的权限列表弹出框，通过状态控制 -->
-              <el-dialog
+              <ElDialog
                 v-model="authListVisible[scope.$index]"
                 :title="`权限列表【所属菜单：${formatMenuTitle(scope.row.meta?.title)}】`"
                 :width="1200"
@@ -45,7 +45,7 @@
                   @edit="(item) => showModel('button', item)"
                   @delete="deleteAuth"
                 />
-              </el-dialog>
+              </ElDialog>
             </div>
             <!-- 如果没有权限则显示 '-' -->
             <span v-else></span>
@@ -60,15 +60,15 @@
 
         <el-table-column fixed="right" label="操作" width="180">
           <template #default="scope">
-            <button-table type="add" @click="showModel('menu', null, false, scope.row)" />
-            <button-table type="edit" @click="showDialog('edit', scope.row)" />
-            <button-table type="delete" @click="deleteMenu(scope.row)" />
+            <ArtButtonTable type="add" @click="showModel('menu', null, false, scope.row)" />
+            <ArtButtonTable type="edit" @click="showDialog('edit', scope.row)" />
+            <ArtButtonTable type="delete" @click="deleteMenu(scope.row)" />
           </template>
         </el-table-column>
       </template>
     </art-table>
 
-    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="700px" align-center>
+    <ElDialog :title="dialogTitle" v-model="dialogVisible" width="700px" align-center>
       <el-form
         ref="formRef"
         :model="activeForm"
@@ -108,7 +108,7 @@
             </el-col>
             <el-col :span="12">
               <el-form-item label="图标" prop="icon">
-                <icon-selector
+                <ArtIconSelector
                   v-model="menuForm.icon"
                   :iconType="iconType"
                   :defaultIcon="menuForm.icon"
@@ -253,7 +253,7 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="图标" prop="icon">
-                <icon-selector
+                <ArtIconSelector
                   v-model="permissionForm.icon"
                   :iconType="iconType"
                   :defaultIcon="permissionForm.icon"
@@ -357,10 +357,10 @@
               <el-col :span="24">
                 <el-form-item label="请求方法" prop="api.httpMethod">
                   <el-radio-group v-model="permissionForm.api.httpMethod">
-                    <el-radio-button value="GET">GET</el-radio-button>
-                    <el-radio-button value="POST">POST</el-radio-button>
-                    <el-radio-button value="PUT">PUT</el-radio-button>
-                    <el-radio-button value="DELETE">DELETE</el-radio-button>
+                    <el-radio-button label="GET" value="GET" />
+                    <el-radio-button label="POST" value="POST" />
+                    <el-radio-button label="PUT" value="PUT" />
+                    <el-radio-button label="DELETE" value="DELETE" />
                   </el-radio-group>
                 </el-form-item>
               </el-col>
@@ -391,7 +391,7 @@
           <el-button type="primary" @click="submitForm()"> 确 定 </el-button>
         </span>
       </template>
-    </el-dialog>
+    </ElDialog>
   </div>
 </template>
 
@@ -406,6 +406,7 @@
   import PermissionList from '@/components/Permission/PermissionList.vue'
   import { menuService, MenuApiService } from '@/api/menuApi'
   import type { AddMenuParams, EditMenuParams } from '@/api/model/menuModel'
+  import '@/utils/browserPatch'
   import {
     PermissionTypeEnum,
     AddPermissionParams,
@@ -415,7 +416,7 @@
     ButtonPermission
   } from '@/api/model/menuModel'
 
-  const menuList = computed(() => useMenuStore().getMenuList)
+  const { menuList } = storeToRefs(useMenuStore())
 
   // 用于跟踪每个菜单的权限列表是否显示
   const authListVisible = reactive<Record<number, boolean>>({})
@@ -564,7 +565,7 @@
   const isMainMenuAdd = ref(false)
 
   const showDialog = (type: string, row: any) => {
-    showModel('menu', row, false)
+    showModel(type, row, false)
   }
 
   const handleChange = () => {}
@@ -749,8 +750,6 @@
               remarks: ''
             }
 
-            console.log('编辑权限，权限类型：', permissionForm.permissionType, '完整数据：', row)
-
             // 根据权限类型设置特定字段
             if (permissionForm.permissionType === PermissionTypeEnum.ROUTE && row.page) {
               permissionForm.pagePermission = { ...row.page }
@@ -758,7 +757,6 @@
               permissionForm.button = { ...row.button }
             } else if (permissionForm.permissionType === PermissionTypeEnum.API && row.api) {
               permissionForm.api = { ...row.api }
-              console.log('API数据已设置:', permissionForm.api)
             }
 
             // 如果权限有嵌套的api对象，也要考虑这种情况
@@ -783,7 +781,6 @@
       // 新增权限时，确保设置正确的菜单ID
       if (type === 'button' && currentEditRow.value) {
         // 设置当前选中菜单的ID
-        console.log('设置权限的菜单ID:', currentEditRow.value.id)
         permissionForm.menuId = currentEditRow.value.id || 0
       } else if (parentRow && currentEditRow.value) {
         // 如果是从菜单行添加，预先设置menuId，以备后续切换到权限表单

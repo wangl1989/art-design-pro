@@ -1,138 +1,98 @@
 <template>
-  <div class="page-content">
-    <table-bar
-      ref="tableBarRef"
-      :showTop="false"
-      @search="search"
-      @reset="resetQuery"
-      @changeColumn="changeColumn"
-      :columns="columns"
-    >
-      <template #top>
-        <el-form
-          :model="queryParams"
-          ref="searchFormRef"
-          inline
-          label-width="90px"
-          class="compact-form"
-        >
-          <el-row :gutter="0">
-            <el-col :span="8">
-              <el-form-item label="键：">
-                <el-input
-                  v-model="queryParams.keyPattern"
-                  placeholder="请输入key搜索"
-                  style="width: 220px"
-                ></el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="过期时间：">
-                <el-switch
-                  v-model="queryParams.sortByExpireAsc"
-                  active-text="过期时间升序"
-                  inactive-text="过期时间降序"
-                ></el-switch>
-              </el-form-item>
-            </el-col>
-            <el-col :span="8" class="search-buttons">
-              <el-button type="primary" @click="search" v-ripple>搜索</el-button>
-              <el-button @click="resetQuery" v-ripple>重置</el-button>
-            </el-col>
-          </el-row>
-        </el-form>
-      </template>
-      <template #search-buttons>
-        <!-- 这里故意留空，按钮已经移到表单内部 -->
-      </template>
-      <template #bottom>
-        <el-button type="danger" @click="handleBatchDelete" v-auth="'redis_batch_delete'" v-ripple
-          >批量删除</el-button
-        >
-      </template>
-    </table-bar>
+  <ArtTableFullScreen>
+    <div class="redis-page" id="table-full-screen">
+      <!-- 搜索栏 -->
+      <ArtSearchBar
+        v-model:filter="formFilters"
+        :items="formItems"
+        @reset="handleReset"
+        @search="search"
+      ></ArtSearchBar>
 
-    <art-table
-      :data="redisList"
-      selection
-      v-loading="loading"
-      pagination
-      :currentPage="pagination.current"
-      :pageSize="pagination.size"
-      :total="pagination.total"
-      @current-change="handleCurrentChange"
-      @size-change="handleSizeChange"
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column label="键名" prop="key" min-width="250" v-if="columns[0].show" />
-      <el-table-column label="类型" prop="type" width="120" v-if="columns[1].show">
-        <template #default="scope">
-          <el-tag :type="getRedisTypeColor(scope.row.type)" size="small">
-            {{ scope.row.type }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="TTL" prop="ttl" width="120" v-if="columns[2].show">
-        <template #default="scope">
-          <span v-if="scope.row.ttl === -1">永不过期</span>
-          <span v-else-if="scope.row.ttl === -2">已过期</span>
-          <span v-else>{{ formatTTL(scope.row.ttl) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="值" prop="value" min-width="180" v-if="columns[3].show">
-        <template #default="scope">
-          <el-button
-            type="primary"
-            v-auth="'redis_show_value'"
-            link
-            @click="showJsonDialog(scope.row.value, '键值数据')"
-          >
-            查看值
-          </el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" fixed="right" width="120" v-if="columns[4].show">
-        <template #default="scope">
-          <el-button type="danger" v-auth="'redis_delete'" link @click="handleDelete(scope.row)">
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </art-table>
-
-    <!-- JSON数据预览对话框 -->
-    <el-dialog v-model="jsonDialogVisible" :title="jsonDialogTitle" width="60%">
-      <div v-if="isDataTooLarge" class="data-size-warning">
-        <el-alert
-          :title="`数据较大 (${(dataSize / 1024).toFixed(2)} KB)，可能影响浏览器性能`"
-          type="warning"
-          :closable="false"
+      <ElCard shadow="never" class="art-table-card">
+        <!-- 表格头部 -->
+        <ArtTableHeader
+          :columnList="columnOptions"
+          v-model:columns="columnChecks"
+          @refresh="loadRedisList"
         >
-          <template #default>
-            <el-button size="small" @click="toggleFullData" type="primary">
-              {{ isFullData ? '显示部分数据' : '显示完整数据' }}
+          <template #left>
+            <el-button
+              type="danger"
+              @click="handleBatchDelete"
+              v-auth="'redis_batch_delete'"
+              v-ripple
+            >
+              批量删除
             </el-button>
           </template>
-        </el-alert>
-      </div>
-      <div class="json-viewer">
-        <pre v-html="formattedJson"></pre>
-      </div>
-    </el-dialog>
-  </div>
+          <template #right>
+            <el-form-item label="排序:" style=" margin-right: 16px;margin-bottom: 0">
+              <el-switch
+                v-model="sortByExpireAsc"
+                @change="search"
+                active-text="过期时间升序"
+                inactive-text="过期时间降序"
+                inline-prompt
+                style="
+
+--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
+              />
+            </el-form-item>
+          </template>
+        </ArtTableHeader>
+
+        <!-- 表格 -->
+        <ArtTable
+          :data="redisList"
+          selection
+          v-loading="loading"
+          :currentPage="formFilters.page"
+          :pageSize="formFilters.limit"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+          @selection-change="handleSelectionChange"
+          :marginTop="10"
+          height="100%"
+        >
+          <template #default>
+            <ElTableColumn v-for="col in columns" :key="col.prop || col.type" v-bind="col" />
+          </template>
+        </ArtTable>
+
+        <!-- JSON数据预览对话框 -->
+        <el-dialog v-model="jsonDialogVisible" :title="jsonDialogTitle" width="60%">
+          <div v-if="isDataTooLarge" class="data-size-warning">
+            <el-alert
+              :title="`数据较大 (${(dataSize / 1024).toFixed(2)} KB)，可能影响浏览器性能`"
+              type="warning"
+              :closable="false"
+            >
+              <template #default>
+                <el-button size="small" @click="toggleFullData" type="primary">
+                  {{ isFullData ? '显示部分数据' : '显示完整数据' }}
+                </el-button>
+              </template>
+            </el-alert>
+          </div>
+          <div class="json-viewer">
+            <pre v-html="formattedJson"></pre>
+          </div>
+        </el-dialog>
+      </ElCard>
+    </div>
+  </ArtTableFullScreen>
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, onMounted, computed } from 'vue'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ref, reactive, onMounted, computed, h } from 'vue'
+  import { ElMessage, ElMessageBox, ElTag, ElButton, ElFormItem, ElSwitch } from 'element-plus'
   import { RedisApi } from '@/api/redisApi'
   import { RedisRecordModel, RedisListParam } from '@/api/model/redisModel'
-  import type { FormInstance } from 'element-plus'
-
-  // 表格栏引用
-  const tableBarRef = ref()
-  // 搜索表单引用
-  const searchFormRef = ref<FormInstance>()
+  import { useCheckedColumns, type ColumnOption } from '@/composables/useCheckedColumns'
+  import ArtButtonTable from '@/components/core/forms/ArtButtonTable.vue'
+  import { SearchFormItem } from '@/types/search-form'
 
   // 加载状态
   const loading = ref(false)
@@ -143,39 +103,31 @@
   // 选中的记录
   const selectedRedisRecords = ref<RedisRecordModel[]>([])
 
-  // 列配置
-  const columns = reactive([
-    { name: '键名', show: true },
-    { name: '类型', show: true },
-    { name: 'TTL', show: true },
-    { name: '值', show: true },
-    { name: '操作', show: true }
-  ])
-
-  // 查询参数
-  const queryParams = reactive<RedisListParam>({
-    page: 1,
-    limit: 10,
+  // 定义表单搜索初始值
+  const initialSearchState = {
     keyPattern: '',
-    sortByExpireAsc: false
-  })
+    page: 1,
+    limit: 10
+  }
 
-  // 分页信息
-  const pagination = reactive({
-    current: 1,
-    size: 10,
-    total: 0,
-    pages: 0
-  })
+  // 排序状态
+  const sortByExpireAsc = ref(false)
 
-  // JSON预览对话框
-  const jsonDialogVisible = ref(false)
-  const jsonDialogTitle = ref('')
-  const jsonRawData = ref<any>({})
-  const isFullData = ref(false)
-  const isDataTooLarge = ref(false)
-  const dataSize = ref(0)
-  const MAX_SAFE_SIZE = 10000 // 字符数限制，超过则截断
+  // 统一搜索和分页状态
+  const formFilters = reactive({ ...initialSearchState })
+
+  // 搜索栏配置
+  const formItems: SearchFormItem[] = [
+    {
+      label: '键',
+      prop: 'keyPattern',
+      type: 'input',
+      config: {
+        placeholder: '请输入key搜索',
+        clearable: true
+      }
+    }
+  ]
 
   // 获取Redis类型对应的标签颜色
   const getRedisTypeColor = (
@@ -194,6 +146,10 @@
 
   // 格式化TTL显示
   const formatTTL = (ttl: number): string => {
+    if (ttl < 0) {
+      // Handle -1 (永不过期) and -2 (已过期)
+      return ttl === -1 ? '永不过期' : '已过期'
+    }
     if (ttl < 60) {
       return `${ttl}秒`
     } else if (ttl < 3600) {
@@ -205,22 +161,82 @@
     }
   }
 
+  // 列定义
+  const columnOptions: ColumnOption[] = [
+    { prop: 'key', label: '键名', minWidth: 250 },
+    {
+      prop: 'type',
+      label: '类型',
+      width: 120,
+      formatter: (row) =>
+        h(ElTag, { type: getRedisTypeColor(row.type), size: 'small' }, () => row.type)
+    },
+    {
+      prop: 'ttl',
+      label: 'TTL',
+      width: 120,
+      formatter: (row) => h('span', null, formatTTL(row.ttl))
+    },
+    {
+      prop: 'value',
+      label: '值',
+      minWidth: 180,
+      formatter: (row) =>
+        h(ArtButtonTable, {
+          text: '查看值',
+          icon: '&#xe745;',
+          iconColor: '#409EFF',
+          auth: 'redis_show_value',
+          onClick: () => showJsonDialog(row.value, '键值数据')
+        })
+    },
+    {
+      prop: 'actions',
+      label: '操作',
+      fixed: 'right',
+      width: 120,
+      formatter: (row) =>
+        h(ArtButtonTable, {
+          type: 'delete',
+          auth: 'redis_delete',
+          onClick: () => handleDelete(row)
+        })
+    }
+  ]
+
+  // 列定义与动态显隐
+  const { columns, columnChecks } = useCheckedColumns(() => columnOptions)
+
+  // 分页信息
+  const pagination = reactive({
+    total: 0
+  })
+
+  // JSON预览对话框
+  const jsonDialogVisible = ref(false)
+  const jsonDialogTitle = ref('')
+  const jsonRawData = ref<any>({}) // Keep type any for flexibility
+  const isFullData = ref(false)
+  const isDataTooLarge = ref(false)
+  const dataSize = ref(0)
+  const MAX_SAFE_SIZE = 10000
+
   // 展示JSON数据对话框
-  const showJsonDialog = (value: string, title: string) => {
+  const showJsonDialog = (value: any, title: string) => {
+    // Allow any type for value
     try {
       jsonDialogTitle.value = title
-      jsonRawData.value = value || { 内容: '空数据' }
+      jsonRawData.value = value ?? { 内容: '空数据' } // Handle null/undefined
 
-      // 计算数据大小
-      const strValue = typeof value === 'string' ? value : JSON.stringify(value || {})
+      const strValue = typeof value === 'string' ? value : JSON.stringify(value ?? {})
       dataSize.value = strValue.length
       isDataTooLarge.value = dataSize.value > MAX_SAFE_SIZE
-      isFullData.value = false // 重置为截断模式
+      isFullData.value = false
 
       jsonDialogVisible.value = true
     } catch (error) {
       console.error('处理数据失败:', error)
-      jsonRawData.value = { 内容: value || '无法解析的数据' }
+      jsonRawData.value = { 内容: String(value ?? '无法解析的数据') } // Ensure content is stringifiable
       jsonDialogVisible.value = true
     }
   }
@@ -232,100 +248,81 @@
 
   // 格式化JSON并添加语法高亮
   const formattedJson = computed(() => {
+    let displayValue = jsonRawData.value
+    let originalString = ''
+    let suffix = ''
+
     try {
-      let json
-      let jsonString = ''
-
-      try {
-        if (typeof jsonRawData.value === 'string') {
-          // 如果数据过大且用户未选择查看完整数据，则截断
-          if (isDataTooLarge.value && !isFullData.value) {
-            jsonString = jsonRawData.value.substring(0, MAX_SAFE_SIZE)
-            json = JSON.parse(jsonString)
-          } else {
-            jsonString = jsonRawData.value
-            json = JSON.parse(jsonString)
-          }
-        } else {
-          json = jsonRawData.value
-          jsonString = JSON.stringify(json)
-
-          if (isDataTooLarge.value && !isFullData.value) {
-            jsonString = jsonString.substring(0, MAX_SAFE_SIZE)
-            json = JSON.parse(jsonString)
-          }
-        }
-      } catch {
-        // 如果不是有效的JSON格式，直接显示原始内容
-        if (typeof jsonRawData.value === 'string') {
-          if (isDataTooLarge.value && !isFullData.value) {
-            return jsonRawData.value.substring(0, MAX_SAFE_SIZE) + '...(数据已截断)'
-          }
-          return jsonRawData.value
-        } else {
-          const str = JSON.stringify(jsonRawData.value, null, 2)
-          if (isDataTooLarge.value && !isFullData.value) {
-            return str.substring(0, MAX_SAFE_SIZE) + '...(数据已截断)'
-          }
-          return str
-        }
+      if (typeof displayValue === 'string') {
+        originalString = displayValue
+      } else {
+        originalString = JSON.stringify(displayValue, null, 2)
       }
-
-      // 格式化和高亮处理
-      let formatted = JSON.stringify(json, null, 2)
-
-      // 对于大型数据，简化高亮处理以提高性能
-      if (isDataTooLarge.value) {
-        return formatted + (isFullData.value ? '' : '...(数据已截断)')
-      }
-
-      // 小型数据才进行全量的语法高亮处理
-      return formatted
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(
-          /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\\-]?\d+)?)/g,
-          (match) => {
-            let cls = 'json-number'
-            if (/^"/.test(match)) {
-              if (/:$/.test(match)) {
-                cls = 'json-key'
-              } else {
-                cls = 'json-string'
-              }
-            } else if (/true|false/.test(match)) {
-              cls = 'json-boolean'
-            } else if (/null/.test(match)) {
-              cls = 'json-null'
-            }
-            return `<span class="${cls}">${match}</span>`
-          }
-        )
-    } catch (e) {
-      console.error('解析JSON数据失败:', e)
-      if (typeof jsonRawData.value === 'string') {
-        const value = jsonRawData.value
-        if (isDataTooLarge.value && !isFullData.value) {
-          return value.substring(0, MAX_SAFE_SIZE) + '...(数据已截断)'
-        }
-        return value
-      }
-      return JSON.stringify(jsonRawData.value, null, 2)
+    } catch {
+      originalString = String(displayValue ?? '') // Fallback to string conversion
     }
+
+    if (isDataTooLarge.value && !isFullData.value) {
+      displayValue = originalString.substring(0, MAX_SAFE_SIZE)
+      suffix = '...(数据已截断)'
+      try {
+        // Try to format truncated string for basic display
+        displayValue = JSON.stringify(
+          JSON.parse(displayValue + (displayValue.startsWith('{') ? '}' : ']')),
+          null,
+          2
+        ) // Basic heuristic parse
+        displayValue = displayValue.substring(0, displayValue.lastIndexOf('\n'))
+      } catch {
+        displayValue = originalString.substring(0, MAX_SAFE_SIZE)
+      }
+    } else {
+      try {
+        // Use originalString which should be valid JSON string or original string
+        const parsed = JSON.parse(originalString)
+        displayValue = JSON.stringify(parsed, null, 2)
+      } catch {
+        displayValue = originalString // Show raw if not valid JSON
+      }
+    }
+
+    displayValue = displayValue.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+    // Fixed regex escapes and highlighting logic
+    displayValue = displayValue.replace(
+      /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*")/g, // Try escaping the backslash
+      function (match: string) {
+        return '<span class="json-string">' + match + '</span>'
+      }
+    )
+    displayValue = displayValue.replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
+    displayValue = displayValue.replace(/\b(null)\b/g, '<span class="json-null">$1</span>')
+    displayValue = displayValue.replace(
+      /(-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, // Regex for numbers
+      '<span class="json-number">$1</span>'
+    )
+    // Attempt to highlight keys after string highlighting
+    displayValue = displayValue.replace(
+      /(<span class="json-string">)("[^"\n]+")(<\/span>)\s*:/g, // Regex for keys
+      '$1<span class="json-key">$2</span>$3:'
+    )
+
+    return displayValue + suffix
   })
 
   // 加载Redis列表数据
   const loadRedisList = async () => {
     loading.value = true
     try {
-      const res = await RedisApi.getRedisRecord(queryParams)
+      // Construct params including the separate sort state
+      const params: RedisListParam = {
+        ...formFilters,
+        sortByExpireAsc: sortByExpireAsc.value // Add sort param here
+      }
+      const res = await RedisApi.getRedisRecord(params)
       if (res.success) {
         redisList.value = res.data.records
         pagination.total = res.data.total
-        pagination.current = res.data.current
-        pagination.size = res.data.size
-        pagination.pages = res.data.pages
       } else {
         ElMessage.error(res.message || '获取Redis列表失败')
       }
@@ -339,16 +336,14 @@
 
   // 搜索
   const search = () => {
-    queryParams.page = 1 // 搜索时重置为第一页
+    formFilters.page = 1 // Ensure page reset on explicit search / sort change
     loadRedisList()
   }
 
   // 重置查询
-  const resetQuery = () => {
-    queryParams.keyPattern = ''
-    queryParams.sortByExpireAsc = false
-    queryParams.page = 1
-    queryParams.limit = 10
+  const handleReset = () => {
+    Object.assign(formFilters, initialSearchState)
+    sortByExpireAsc.value = false // Reset sort state as well
     loadRedisList()
   }
 
@@ -371,18 +366,21 @@
     })
       .then(async () => {
         try {
+          // Use Promise.allSettled for better error handling if needed
           const deletePromises = selectedRedisRecords.value.map((record) =>
             RedisApi.deleteRedisRecord(record.key)
           )
+          const results = await Promise.all(deletePromises) // Keep Promise.all for simplicity now
 
-          const results = await Promise.all(deletePromises)
-          const success = results.every((res) => res.success)
-
-          if (success) {
+          // Check results - more granular feedback could be added
+          const allSucceeded = results.every((res) => res.success)
+          if (allSucceeded) {
             ElMessage.success('批量删除成功')
-            loadRedisList() // 重新加载数据
+            loadRedisList() // Reload data
           } else {
+            // Find which ones failed if necessary, or give a general error
             ElMessage.error('部分或全部删除失败，请重试')
+            loadRedisList() // Still reload to reflect potential partial success
           }
         } catch (error) {
           console.error('批量删除Redis记录失败:', error)
@@ -390,7 +388,7 @@
         }
       })
       .catch(() => {
-        // 用户取消操作
+        ElMessage.info('已取消批量删除') // Add feedback for cancel
       })
   }
 
@@ -406,7 +404,7 @@
           const res = await RedisApi.deleteRedisRecord(row.key)
           if (res.success) {
             ElMessage.success('删除成功')
-            loadRedisList() // 重新加载数据
+            loadRedisList() // Reload data
           } else {
             ElMessage.error(res.message || '删除失败')
           }
@@ -416,25 +414,20 @@
         }
       })
       .catch(() => {
-        // 用户取消操作
+        ElMessage.info('已取消删除') // Add feedback for cancel
       })
-  }
-
-  // 列显示设置
-  const changeColumn = (list: any) => {
-    Object.assign(columns, list)
   }
 
   // 处理分页变化
   const handleCurrentChange = (page: number) => {
-    queryParams.page = page
+    formFilters.page = page
     loadRedisList()
   }
 
   // 处理每页显示数量变化
   const handleSizeChange = (size: number) => {
-    queryParams.limit = size
-    queryParams.page = 1 // 切换每页数量时重置为第一页
+    formFilters.limit = size
+    formFilters.page = 1
     loadRedisList()
   }
 
@@ -445,33 +438,6 @@
 </script>
 
 <style lang="scss" scoped>
-  .page-content {
-    width: 100%;
-    height: 100%;
-  }
-
-  .search-buttons {
-    display: flex;
-    align-items: center;
-    height: 32px;
-    margin-top: 4px;
-
-    .el-button {
-      margin-right: 10px;
-
-      &:last-child {
-        margin-right: 0;
-      }
-    }
-  }
-
-  .compact-form {
-    .el-form-item {
-      margin-right: 0;
-      margin-bottom: 18px;
-    }
-  }
-
   .json-viewer {
     max-height: 60vh;
     padding: 10px;

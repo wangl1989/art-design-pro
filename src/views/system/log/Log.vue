@@ -1,148 +1,67 @@
 <template>
-  <div class="page-content">
-    <table-bar
-      ref="tableBarRef"
-      :showTop="false"
-      @search="search"
-      @reset="resetQuery"
-      @changeColumn="changeColumn"
-      :columns="columns"
-    >
-      <template #top>
-        <el-form
-          :model="queryParams"
-          ref="searchFormRef"
-          inline
-          label-width="80px"
-          class="compact-form"
+  <ArtTableFullScreen>
+    <div class="log-page" id="table-full-screen">
+      <!-- 搜索栏 -->
+      <ArtSearchBar
+        v-model:filter="formFilters as any"
+        :items="formItems"
+        @reset="handleReset"
+        @search="search"
+        :isExpand="true"
+        auth="log_search"
+      ></ArtSearchBar>
+
+      <ElCard shadow="never" class="art-table-card">
+        <!-- 表格头部 -->
+        <ArtTableHeader
+          :columnList="columnOptions"
+          v-model:columns="columnChecks"
+          @refresh="loadLogList"
         >
-          <el-row :gutter="0">
-            <el-col :span="6">
-              <el-form-item label="操作用户:">
-                <el-input
-                  v-model="queryParams.username"
-                  placeholder="请输入用户名搜索"
-                  style="width: 180px"
-                ></el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="操作标题:">
-                <el-input
-                  v-model="queryParams.title"
-                  placeholder="请输入日志标题搜索"
-                  style="width: 180px"
-                ></el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="请求类型:">
-                <el-select
-                  v-model="queryParams.httpMethod"
-                  placeholder="请选择请求类型"
-                  clearable
-                  style="width: 180px"
-                >
-                  <el-option label="GET" value="GET"></el-option>
-                  <el-option label="POST" value="POST"></el-option>
-                  <el-option label="PUT" value="PUT"></el-option>
-                  <el-option label="DELETE" value="DELETE"></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="6" class="search-buttons">
-              <el-button type="primary" @click="search" v-ripple>搜索</el-button>
-              <el-button @click="resetQuery" v-ripple>重置</el-button>
-            </el-col>
-          </el-row>
-        </el-form>
-      </template>
-      <template #search-buttons>
-        <!-- 这里故意留空，按钮已经移到表单内部 -->
-      </template>
-      <template #bottom>
-        <el-button type="danger" @click="handleDelete" v-ripple>批量删除</el-button>
-      </template>
-    </table-bar>
+          <template #left>
+            <el-button type="danger" @click="handleDelete" v-auth="'log_delete'" v-ripple
+              >批量删除</el-button
+            >
+          </template>
+        </ArtTableHeader>
 
-    <art-table
-      :data="logList"
-      selection
-      v-loading="loading"
-      pagination
-      :currentPage="pagination.current"
-      :pageSize="pagination.size"
-      :total="pagination.total"
-      @current-change="handleCurrentChange"
-      @size-change="handleSizeChange"
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column label="操作用户" prop="username" v-if="columns[0].show" />
-      <el-table-column label="操作标题" prop="title" v-if="columns[1].show" />
-      <el-table-column label="IP地址" prop="remoteAddr" v-if="columns[2].show" />
-      <el-table-column label="请求URI" prop="requestUri" v-if="columns[3].show" />
-      <el-table-column label="请求方法" prop="httpMethod" v-if="columns[4].show">
-        <template #default="scope">
-          <el-tag :type="getHttpMethodType(scope.row.httpMethod) as any" size="small">
-            {{ scope.row.httpMethod }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="浏览器" prop="browser" v-if="columns[5].show" />
-      <el-table-column label="位置" prop="area" v-if="columns[6].show">
-        <template #default="scope">
-          {{ `${scope.row.province || ''}${scope.row.city ? ' - ' + scope.row.city : ''}` }}
-        </template>
-      </el-table-column>
-      <el-table-column label="请求参数" prop="params" v-if="columns[7].show">
-        <template #default="scope">
-          <el-button type="primary" link @click="showJsonDialog(scope.row.params, '请求参数')">
-            查看请求参数
-          </el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="返回数据" prop="response" v-if="columns[8].show">
-        <template #default="scope">
-          <el-button type="primary" link @click="showJsonDialog(scope.row.response, '返回数据')">
-            查看返回数据
-          </el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="请求耗时" prop="useTime" v-if="columns[9].show">
-        <template #default="scope">
-          {{ `${scope.row.useTime}ms` }}
-        </template>
-      </el-table-column>
-      <el-table-column label="异常信息" prop="exception" v-if="columns[10].show">
-        <template #default="scope">
-          <el-button
-            v-if="scope.row.exception"
-            type="danger"
-            link
-            @click="showJsonDialog(scope.row.exception, '异常信息')"
-          >
-            查看异常
-          </el-button>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建时间" prop="createDate" sortable v-if="columns[11].show" />
-    </art-table>
+        <!-- 表格 -->
+        <ArtTable
+          :data="logList"
+          selection
+          v-loading="loading"
+          :currentPage="pagination.current"
+          :pageSize="pagination.size"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+          @selection-change="handleSelectionChange"
+          :marginTop="10"
+          height="100%"
+        >
+          <template #default>
+            <ElTableColumn v-for="col in columns" :key="col.prop || col.type" v-bind="col" />
+          </template>
+        </ArtTable>
 
-    <!-- JSON数据预览对话框 -->
-    <el-dialog v-model="jsonDialogVisible" :title="jsonDialogTitle" width="60%">
-      <div class="json-viewer">
-        <pre v-html="formattedJson"></pre>
-      </div>
-    </el-dialog>
-  </div>
+        <!-- JSON数据预览对话框 -->
+        <ElDialog v-model="jsonDialogVisible" :title="jsonDialogTitle" width="60%" destroy-on-close>
+          <div class="json-viewer">
+            <pre v-html="formattedJson"></pre>
+          </div>
+        </ElDialog>
+      </ElCard>
+    </div>
+  </ArtTableFullScreen>
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, onMounted, computed } from 'vue'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ref, reactive, onMounted, computed, h } from 'vue'
+  import { ElMessage, ElMessageBox, ElTag, ElDialog } from 'element-plus'
   import { LogService } from '@/api/logApi'
   import { LogRecord, LogListParams } from '@/api/model/logModel'
+  import { useCheckedColumns } from '@/composables/useCheckedColumns'
+  import { SearchFormItem, SearchChangeParams } from '@/types/search-form'
 
   // 加载状态
   const loading = ref(false)
@@ -153,33 +72,63 @@
   // 选中的日志记录
   const selectedLogs = ref<LogRecord[]>([])
 
-  // 列配置
-  const columns = reactive([
-    { name: '操作用户', show: true },
-    { name: '操作标题', show: true },
-    { name: 'IP地址', show: true },
-    { name: '请求URI', show: true },
-    { name: '请求方法', show: true },
-    { name: '浏览器', show: true },
-    { name: '位置', show: true },
-    { name: '请求参数', show: true },
-    { name: '返回数据', show: true },
-    { name: '请求耗时', show: true },
-    { name: '异常信息', show: false },
-    { name: '创建时间', show: true }
-  ])
+  // 表单项变更处理 (如果 ArtSearchBar 需要)
+  const handleFormChange = (params: SearchChangeParams): void => {
+    console.log('表单项变更:', params)
+  }
 
-  // 查询参数
-  const queryParams = reactive<LogListParams>({
-    page: 1,
-    limit: 10,
+  // 表单配置项 for ArtSearchBar
+  const formItems: SearchFormItem[] = [
+    {
+      label: '操作用户',
+      prop: 'username',
+      type: 'input',
+      config: {
+        placeholder: '请输入用户名搜索',
+        clearable: true
+      },
+      onChange: handleFormChange
+    },
+    {
+      label: '操作标题',
+      prop: 'title',
+      type: 'input',
+      config: {
+        placeholder: '请输入日志标题搜索',
+        clearable: true
+      },
+      onChange: handleFormChange
+    },
+    {
+      label: '请求类型',
+      prop: 'httpMethod',
+      type: 'select',
+      config: {
+        placeholder: '请选择请求类型',
+        clearable: true
+      },
+      options: () => [
+        { label: 'GET', value: 'GET' },
+        { label: 'POST', value: 'POST' },
+        { label: 'PUT', value: 'PUT' },
+        { label: 'DELETE', value: 'DELETE' }
+      ],
+      onChange: handleFormChange
+    }
+  ]
+
+  // 搜索及分页状态
+  const initialSearchState = {
     username: '',
     title: '',
-    httpMethod: undefined,
-    sortByCreateDateAsc: false
-  })
+    httpMethod: '',
+    page: 1,
+    limit: 10,
+    sortByCreateDateAsc: false // 保留排序参数
+  }
+  const formFilters = reactive({ ...initialSearchState })
 
-  // 分页信息
+  // 分页信息 (用于驱动 ArtTable 分页器显示)
   const pagination = reactive({
     current: 1,
     size: 10,
@@ -197,16 +146,14 @@
     try {
       const json =
         typeof jsonRawData.value === 'string' ? JSON.parse(jsonRawData.value) : jsonRawData.value
-
       const formatted = JSON.stringify(json, null, 2)
-
-      // 简单的语法高亮处理
+      // 简单的语法高亮处理 (保持不变)
       return formatted
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(
-          /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\\-]?\d+)?)/g,
+          /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
           (match) => {
             let cls = 'json-number'
             if (/^"/.test(match)) {
@@ -253,22 +200,117 @@
     method: string | null
   ): 'success' | 'warning' | 'danger' | 'info' | 'primary' | '' => {
     if (!method) return ''
-
     const methodMap: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'primary'> = {
       GET: 'success',
       POST: 'primary',
       PUT: 'warning',
       DELETE: 'danger'
     }
-
     return methodMap[method] || ''
   }
+
+  // 列配置 for ArtTableHeader
+  const columnOptions = [
+    { label: '勾选', type: 'selection' },
+    { label: '操作用户', prop: 'username' },
+    { label: '操作标题', prop: 'title' },
+    { label: 'IP地址', prop: 'remoteAddr' },
+    { label: '请求URI', prop: 'requestUri' },
+    { label: '请求方法', prop: 'httpMethod' },
+    { label: '浏览器', prop: 'browser' },
+    { label: '位置', prop: 'area' },
+    { label: '请求参数', prop: 'params' },
+    { label: '返回数据', prop: 'response' },
+    { label: '请求耗时', prop: 'useTime' },
+    { label: '异常信息', prop: 'exception' },
+    { label: '创建时间', prop: 'createDate' }
+  ]
+
+  // 动态列配置 for ArtTable using useCheckedColumns
+  const { columnChecks, columns } = useCheckedColumns(() => [
+    { type: 'selection' },
+    { prop: 'username', label: '操作用户' },
+    { prop: 'title', label: '操作标题' },
+    { prop: 'remoteAddr', label: 'IP地址' },
+    { prop: 'requestUri', label: '请求URI' },
+    {
+      prop: 'httpMethod',
+      label: '请求方法',
+      formatter: (row) => {
+        return h(
+          ElTag,
+          { type: getHttpMethodType(row.httpMethod) as any, size: 'small' },
+          () => row.httpMethod
+        )
+      }
+    },
+    { prop: 'browser', label: '浏览器' },
+    {
+      prop: 'area',
+      label: '位置',
+      formatter: (row) => `${row.province || ''}${row.city ? ' - ' + row.city : ''}`
+    },
+    {
+      prop: 'params',
+      label: '请求参数',
+      formatter: (row) => {
+        return h(
+          'button',
+          {
+            class: 'el-button el-button--primary el-button--small is-link',
+            onClick: () => showJsonDialog(row.params, '请求参数')
+          },
+          '查看请求参数'
+        )
+      }
+    },
+    {
+      prop: 'response',
+      label: '返回数据',
+      formatter: (row) => {
+        return h(
+          'button',
+          {
+            class: 'el-button el-button--primary el-button--small is-link',
+            onClick: () => showJsonDialog(row.response, '返回数据')
+          },
+          '查看返回数据'
+        )
+      }
+    },
+    {
+      prop: 'useTime',
+      label: '请求耗时',
+      formatter: (row) => `${row.useTime}ms`
+    },
+    {
+      prop: 'exception',
+      label: '异常信息',
+      checked: false,
+      formatter: (row) => {
+        if (row.exception) {
+          return h(
+            'button',
+            {
+              class: 'el-button el-button--danger el-button--small is-link',
+              onClick: () => showJsonDialog(row.exception, '异常信息')
+            },
+            '查看异常'
+          )
+        } else {
+          return h('span', '-')
+        }
+      }
+    },
+    { prop: 'createDate', label: '创建时间', sortable: true }
+  ])
 
   // 加载日志列表数据
   const loadLogList = async () => {
     loading.value = true
     try {
-      const res = await LogService.getLogList(queryParams)
+      // 使用 formFilters 发送请求
+      const res = await LogService.getLogList(formFilters as LogListParams)
       if (res.success) {
         logList.value = res.data.records
         pagination.total = res.data.total
@@ -288,18 +330,13 @@
 
   // 搜索
   const search = () => {
-    queryParams.page = 1 // 搜索时重置为第一页
+    formFilters.page = 1 // 搜索时重置为第一页
     loadLogList()
   }
 
-  // 重置查询
-  const resetQuery = () => {
-    queryParams.username = ''
-    queryParams.title = ''
-    queryParams.httpMethod = undefined
-    queryParams.page = 1
-    queryParams.limit = 10
-    queryParams.sortByCreateDateAsc = false
+  // 重置查询 (handleReset for ArtSearchBar)
+  const handleReset = () => {
+    Object.assign(formFilters, { ...initialSearchState })
     loadLogList()
   }
 
@@ -337,24 +374,20 @@
       })
       .catch(() => {
         // 用户取消操作
+        ElMessage.info('已取消删除')
       })
-  }
-
-  // 列显示设置
-  const changeColumn = (list: any) => {
-    Object.assign(columns, list)
   }
 
   // 处理分页变化
   const handleCurrentChange = (page: number) => {
-    queryParams.page = page
+    formFilters.page = page
     loadLogList()
   }
 
   // 处理每页显示数量变化
   const handleSizeChange = (size: number) => {
-    queryParams.limit = size
-    queryParams.page = 1 // 切换每页数量时重置为第一页
+    formFilters.limit = size
+    formFilters.page = 1 // 切换每页数量时重置为第一页
     loadLogList()
   }
 
@@ -362,73 +395,49 @@
   onMounted(() => {
     loadLogList()
   })
-
-  // TableBar 引用
-  const tableBarRef = ref()
 </script>
 
 <style lang="scss" scoped>
-  .page-content {
-    width: 100%;
-    height: 100%;
-  }
+  .log-page {
+    .art-table-card {
+      margin-top: 16px;
+    }
 
-  .search-buttons {
-    display: flex;
-    align-items: center;
-    height: 32px;
-    margin-top: 4px;
+    .json-viewer {
+      max-height: 60vh;
+      padding: 10px;
+      overflow-y: auto;
+      background-color: #f8f8f8;
+      border-radius: 4px;
 
-    .el-button {
-      margin-right: 10px;
-
-      &:last-child {
-        margin-right: 0;
+      pre {
+        margin: 0;
+        font-family: monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        word-wrap: break-word;
+        white-space: pre-wrap;
       }
-    }
-  }
 
-  .compact-form {
-    .el-form-item {
-      margin-right: 0;
-      margin-bottom: 18px;
-    }
-  }
+      :deep(.json-key) {
+        color: #881391;
+      }
 
-  .json-viewer {
-    max-height: 60vh;
-    padding: 10px;
-    overflow-y: auto;
-    background-color: #f8f8f8;
-    border-radius: 4px;
+      :deep(.json-string) {
+        color: #1a8b1a;
+      }
 
-    pre {
-      margin: 0;
-      font-family: monospace;
-      font-size: 14px;
-      line-height: 1.5;
-      word-wrap: break-word;
-      white-space: pre-wrap;
-    }
+      :deep(.json-number) {
+        color: #1a5fb4;
+      }
 
-    :deep(.json-key) {
-      color: #881391;
-    }
+      :deep(.json-boolean) {
+        color: #e95800;
+      }
 
-    :deep(.json-string) {
-      color: #1a8b1a;
-    }
-
-    :deep(.json-number) {
-      color: #1a5fb4;
-    }
-
-    :deep(.json-boolean) {
-      color: #e95800;
-    }
-
-    :deep(.json-null) {
-      color: #808080;
+      :deep(.json-null) {
+        color: #808080;
+      }
     }
   }
 </style>

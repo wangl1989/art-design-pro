@@ -47,22 +47,20 @@
       <el-table-column label="文件类型" prop="fileType" />
       <el-table-column label="文件大小" prop="fileSize" />
       <el-table-column label="上传时间" prop="createDate" />
-      <el-table-column label="操作" width="180" fixed="right">
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="scope">
-          <el-button
-            type="primary"
-            v-auth="'resource_preview'"
-            link
+          <ArtButtonTable
+            text="预览"
+            icon="&#xe700;"
+            iconColor="#67C23A"
             @click="previewResource(scope.row)"
-            >预览</el-button
-          >
-          <el-button
-            type="primary"
-            v-auth="'resource_copylink'"
-            link
+          />
+          <ArtButtonTable
+            text="复制链接"
+            icon="&#xe63a;"
+            iconColor="#125232"
             @click="copyUrl(scope.row.webUrl)"
-            >复制链接</el-button
-          >
+          />
           <!-- <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button> -->
         </template>
       </el-table-column>

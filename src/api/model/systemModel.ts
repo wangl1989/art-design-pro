@@ -24,7 +24,7 @@ export interface SystemRecord {
   description?: string // 网站描述  多行文本框
   powerby?: string // 版权信息
   record?: string // 网站备案号
-  remarks?: string // 个人简介 多行文本框
+  remarks: string | '' // 个人简介 多行文本框
 }
 
 export interface SiteUploadTypeResponse {

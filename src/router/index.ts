@@ -55,8 +55,8 @@ const staticRoutes: AppRouteRecordRaw[] = [
       {
         path: RoutesAlias.Analysis,
         name: 'Analysis',
-        component: () => import('@views/dashboard/analysis/index.vue'),
-        meta: { title: 'menus.dashboard.analysis', keepAlive: false }
+        component: () => import('@views/user/Account.vue'),
+        meta: { title: 'menus.user.account', keepAlive: false }
       },
       {
         path: RoutesAlias.Ecommerce,
@@ -69,6 +69,12 @@ const staticRoutes: AppRouteRecordRaw[] = [
         name: 'IconList',
         component: () => import('@views/widgets/IconList.vue'),
         meta: { title: 'menus.widgets.iconList', keepAlive: false }
+      },
+      {
+        path: RoutesAlias.UserDetail,
+        name: 'UserCenter',
+        component: () => import('@views/system/user/UserDetail.vue'),
+        meta: { title: 'menus.user.userDetail', keepAlive: true }
       }
     ]
   },

@@ -24,6 +24,7 @@ export interface UploadParams {
 // 添加FormData类型声明，用于文件上传
 export type UploadFormData = FormData
 
+// 普通图片上传返回对象数据
 export interface UploadResponse {
   name?: string
   url: string

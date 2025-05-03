@@ -1,20 +1,25 @@
 <!-- eslint-disable prettier/prettier -->
 <template>
   <div class="upload-container">
-    <div class="upload-header">
-      <h1 class="title">上传方式配置</h1>
-      <h2 class="subtitle">可自由配置本地或云存储方式</h2>
-
-      <el-button
-        v-if="canAddMore"
-        type="primary"
-        v-auth="'uploadtype_add'"
-        class="add-btn"
-        @click="handleAddUpload"
-        v-ripple
-      >
-        新增上传方式
-      </el-button>
+    <div class="upload-header-card">
+      <div class="upload-header">
+        <div class="header-content">
+          <h1 class="title">上传方式配置</h1>
+          <h2 class="subtitle">可自由配置本地或云存储方式</h2>
+        </div>
+        <div class="header-action">
+          <el-button
+            v-if="canAddMore"
+            type="primary"
+            v-auth="'uploadtype_add'"
+            class="add-btn"
+            @click="handleAddUpload"
+            v-ripple
+          >
+            <el-icon class="el-icon--left"><Plus /></el-icon>新增上传方式
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <div class="upload-cards">
@@ -262,7 +267,7 @@
 <script setup lang="ts">
   import { ref, reactive, computed, onMounted } from 'vue'
   import { ElMessage, FormInstance, FormRules } from 'element-plus'
-  import { Check } from '@element-plus/icons-vue'
+  import { Check, Plus } from '@element-plus/icons-vue'
   import { UploadService } from '@/api/uploadApi'
   import {
     UploadRecord,
@@ -717,28 +722,42 @@
   .upload-container {
     padding: 2rem 1rem;
 
+    .upload-header-card {
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      background-color: var(--el-bg-color);
+      border-radius: 8px;
+      box-shadow: 0 2px 12px 0 rgb(0 0 0 / 5%);
+    }
+
     .upload-header {
-      position: relative;
-      margin-bottom: 40px;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
 
-      .title {
-        margin-bottom: 0.5rem;
-        font-size: 2rem;
-        font-weight: 500;
+      .header-content {
+        .title {
+          margin: 0 0 0.5rem;
+          font-size: 1.75rem;
+          font-weight: 600;
+          color: var(--el-color-primary);
+        }
+
+        .subtitle {
+          margin: 0;
+          font-size: 1rem;
+          font-weight: 400;
+          color: var(--el-text-color-secondary);
+        }
       }
 
-      .subtitle {
-        font-size: 1.2rem;
-        font-weight: 400;
-        color: #666;
-      }
-
-      .add-btn {
-        position: absolute;
-        top: 0;
-        left: 0;
-        margin: 0;
+      .header-action {
+        .add-btn {
+          display: inline-flex;
+          align-items: center;
+          height: 40px;
+          font-weight: 500;
+        }
       }
     }
 
@@ -910,21 +929,27 @@
   @media only screen and (width <= 768px) {
     .upload-container {
       padding: 1rem 0;
+    }
 
-      .upload-header {
+    .upload-header {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+
+      .header-content {
+        width: 100%;
+        text-align: center;
+
         .title {
-          margin-top: 40px;
           font-size: 1.5rem;
         }
+      }
 
-        .subtitle {
-          font-size: 1rem;
-        }
+      .header-action {
+        width: 100%;
 
         .add-btn {
-          position: relative;
           width: 100%;
-          margin-bottom: 20px;
         }
       }
     }

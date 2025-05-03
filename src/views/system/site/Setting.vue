@@ -152,7 +152,7 @@
           </div>
 
           <!-- 将个人简介移出el-tabs，避免警告 -->
-          <Editor v-model="systemData.remarks" :disabled="!isEdit" />
+          <ArtWangEditor v-model="systemData.remarks" :disabled="!isEdit" />
         </el-form>
       </div>
     </PageWrapper>
@@ -166,7 +166,6 @@
   import { SystemRecord, SiteUploadTypeResponse } from '@/api/model/systemModel'
   import PageWrapper from '@/components/Page/PageWrapper.vue'
   import UploadImg from '@/components/Upload/UploadImg.vue'
-  import Editor from '@/components/Editor/index.vue'
 
   // 表单编辑状态
   const isEdit = ref(false)

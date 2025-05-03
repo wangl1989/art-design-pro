@@ -2,6 +2,7 @@
   <div class="login register">
     <div class="left-wrap">
       <LoginLeftView></LoginLeftView>
+      <LoginLeftView></LoginLeftView>
     </div>
     <div class="right-wrap">
       <div class="header">

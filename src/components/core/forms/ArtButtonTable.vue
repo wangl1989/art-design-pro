@@ -13,7 +13,7 @@
   const props = withDefaults(
     defineProps<{
       text?: string
-      type?: 'add' | 'edit' | 'delete' | 'more'
+      type?: 'add' | 'edit' | 'delete' | 'more' | 'success' | 'warning' | 'info'
       icon?: string // 自定义图标
       iconClass?: BgColorEnum // 自定义按钮背景色、文字颜色
       iconColor?: string // 外部传入的图标文字颜色
@@ -33,6 +33,9 @@
     { type: 'add', icon: '&#xe602;', color: BgColorEnum.PRIMARY },
     { type: 'edit', icon: '&#xe642;', color: BgColorEnum.SECONDARY },
     { type: 'delete', icon: '&#xe783;', color: BgColorEnum.ERROR },
+    { type: 'success', icon: '&#xe715;', color: BgColorEnum.SUCCESS },
+    { type: 'warning', icon: '&#xe71b;', color: BgColorEnum.WARNING },
+    { type: 'info', icon: '&#xe80f;', color: BgColorEnum.PRIMARY },
     { type: 'more', icon: '&#xe6df;', color: '' }
   ] as const
 

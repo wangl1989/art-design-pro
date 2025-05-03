@@ -1,97 +1,58 @@
 <template>
-  <div class="page-content">
-    <table-bar
-      :showTop="false"
-      @search="search"
-      @reset="resetQuery"
-      @changeColumn="changeColumn"
-      :columns="columns"
-    >
-      <template #top>
-        <el-form :model="queryParams" inline>
-          <el-row :gutter="15">
-            <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item label="任务名称：">
-                <el-input v-model="queryParams.name" placeholder="请输入任务名称搜索"></el-input>
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
-      </template>
-      <template #bottom>
-        <el-button type="danger" @click="handleBatchDelete" v-ripple>批量删除</el-button>
-      </template>
-    </table-bar>
+  <ArtTableFullScreen>
+    <div class="quartz-task-log-page" id="table-full-screen">
+      <!-- 搜索栏 -->
+      <ArtSearchBar
+        v-model:filter="formFilters as any"
+        :items="formItems"
+        @reset="handleReset"
+        @search="search"
+        :isExpand="true"
+      ></ArtSearchBar>
+      <ElCard shadow="never" class="art-table-card">
+        <!-- 表格头部 -->
+        <ArtTableHeader
+          :columnList="columnOptions"
+          v-model:columns="columnChecks"
+          @refresh="loadLogList"
+        >
+          <template #left>
+            <ElButton type="danger" @click="handleBatchDelete" v-ripple>批量删除</ElButton>
+          </template>
+        </ArtTableHeader>
+        <!-- 表格 -->
+        <ArtTable
+          :data="logList"
+          selection
+          v-loading="loading"
+          :currentPage="formFilters.page"
+          :pageSize="formFilters.limit"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+          @selection-change="handleSelectionChange"
+          height="100%"
+          :marginTop="10"
+        >
+          <template #default>
+            <ElTableColumn v-for="col in columns" :key="col.prop || col.type" v-bind="col" />
+          </template>
+        </ArtTable>
+      </ElCard>
 
-    <art-table
-      :data="logList"
-      selection
-      v-loading="loading"
-      pagination
-      :currentPage="pagination.current"
-      :pageSize="pagination.size"
-      :total="pagination.total"
-      @current-change="handleCurrentChange"
-      @size-change="handleSizeChange"
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column label="任务ID" prop="jobId" width="100" v-if="columns[0].show" />
-      <el-table-column label="任务名称" prop="name" min-width="150" v-if="columns[1].show" />
-      <el-table-column label="Cron表达式" prop="cron" min-width="150" v-if="columns[2].show" />
-      <el-table-column label="目标Bean" prop="targetBean" min-width="180" v-if="columns[3].show" />
-      <el-table-column label="目标方法" prop="trgetMethod" min-width="120" v-if="columns[4].show" />
-      <el-table-column label="参数" prop="params" min-width="120" v-if="columns[5].show" />
-      <el-table-column label="状态" prop="status" width="100" v-if="columns[6].show">
-        <template #default="scope">
-          <el-tag :type="getTaskStatusType(scope.row.status)" size="small">
-            {{ getTaskStatusText(scope.row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="执行耗时" prop="times" min-width="120" v-if="columns[7].show">
-        <template #default="scope">
-          {{ `${scope.row.times || 0}ms` }}
-        </template>
-      </el-table-column>
-      <el-table-column label="异常信息" prop="error" min-width="180" v-if="columns[8].show">
-        <template #default="scope">
-          <el-button
-            v-if="scope.row.error"
-            type="danger"
-            link
-            @click="showErrorDialog(scope.row.error)"
-          >
-            查看异常
-          </el-button>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column
-        label="创建时间"
-        prop="createDate"
-        min-width="180"
-        sortable
-        v-if="columns[9].show"
-      />
-      <el-table-column label="操作" fixed="right" width="100" v-if="columns[10].show">
-        <template #default="scope">
-          <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </art-table>
-
-    <!-- 异常信息对话框 -->
-    <el-dialog v-model="errorDialogVisible" title="异常信息详情" width="60%">
-      <div class="error-content">
-        <pre>{{ currentError }}</pre>
-      </div>
-    </el-dialog>
-  </div>
+      <!-- 异常信息对话框 -->
+      <ElDialog v-model="errorDialogVisible" title="异常信息详情" width="60%">
+        <div class="error-content">
+          <pre>{{ currentError }}</pre>
+        </div>
+      </ElDialog>
+    </div>
+  </ArtTableFullScreen>
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, onMounted } from 'vue'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ref, reactive, onMounted, h } from 'vue'
+  import { ElMessage, ElMessageBox, ElTag, ElButton } from 'element-plus'
   import { QuartzTaskLogService } from '@/api/quartzTaskLogApi'
   import {
     QuartzTaskRecordModel,
@@ -99,6 +60,9 @@
     getTaskStatusText,
     getTaskStatusType
   } from '@/api/model/quartzTaskLogModel'
+  import { useCheckedColumns, type ColumnOption } from '@/composables/useCheckedColumns'
+  import ArtButtonTable from '@/components/core/forms/ArtButtonTable.vue'
+  import type { SearchFormItem } from '@/types/search-form'
 
   // 加载状态
   const loading = ref(false)
@@ -109,35 +73,20 @@
   // 选中的日志记录
   const selectedLogs = ref<QuartzTaskRecordModel[]>([])
 
-  // 列配置
-  const columns = reactive([
-    { name: '任务ID', show: true },
-    { name: '任务名称', show: true },
-    { name: 'Cron表达式', show: true },
-    { name: '目标Bean', show: true },
-    { name: '目标方法', show: true },
-    { name: '参数', show: true },
-    { name: '状态', show: true },
-    { name: '执行耗时', show: true },
-    { name: '异常信息', show: true },
-    { name: '创建时间', show: true },
-    { name: '操作', show: true }
-  ])
-
-  // 查询参数
-  const queryParams = reactive<QuartzTaskLogListParams>({
+  // 初始化搜索条件
+  const initialSearchState = {
+    name: undefined,
     page: 1,
     limit: 10,
-    name: undefined,
     sortByCreateDateAsc: false
-  })
+  }
+
+  // 搜索表单数据
+  const formFilters = reactive<QuartzTaskLogListParams>({ ...initialSearchState })
 
   // 分页信息
   const pagination = reactive({
-    current: 1,
-    size: 10,
-    total: 0,
-    pages: 0
+    total: 0
   })
 
   // 异常信息对话框
@@ -150,17 +99,98 @@
     errorDialogVisible.value = true
   }
 
+  // 搜索表单配置
+  const formItems: SearchFormItem[] = [
+    {
+      label: '任务名称',
+      prop: 'name',
+      type: 'input',
+      elColSpan: 6,
+      config: {
+        placeholder: '请输入任务名称搜索',
+        clearable: true
+      }
+    }
+  ]
+
+  // 表格列配置
+  const columnOptions: ColumnOption[] = [
+    { label: '勾选', type: 'selection' },
+    { prop: 'jobId', label: '任务ID', width: 100 },
+    { prop: 'name', label: '任务名称', minWidth: 150 },
+    { prop: 'cron', label: 'Cron表达式', minWidth: 150 },
+    { prop: 'targetBean', label: '目标Bean', minWidth: 180 },
+    { prop: 'trgetMethod', label: '目标方法', minWidth: 120 },
+    { prop: 'params', label: '参数', minWidth: 120 },
+    {
+      prop: 'status',
+      label: '状态',
+      width: 100,
+      formatter: (row) => {
+        return h(
+          ElTag,
+          {
+            type: getTaskStatusType(row.status),
+            size: 'small'
+          },
+          () => getTaskStatusText(row.status)
+        )
+      }
+    },
+    {
+      prop: 'times',
+      label: '执行耗时',
+      minWidth: 120,
+      formatter: (row) => {
+        return `${row.times || 0}ms`
+      }
+    },
+    {
+      prop: 'exception',
+      label: '异常信息',
+      minWidth: 180,
+      checked: false,
+      formatter: (row) => {
+        if (row.error) {
+          return h(
+            'button',
+            {
+              class: 'el-button el-button--danger el-button--small is-link',
+              onClick: () => showErrorDialog(row.error)
+            },
+            '查看异常'
+          )
+        } else {
+          return h('span', '-')
+        }
+      }
+    },
+    { prop: 'createDate', label: '创建时间', minWidth: 180, sortable: true },
+    {
+      prop: 'actions',
+      label: '操作',
+      fixed: 'right',
+      width: 100,
+      formatter: (row) => {
+        return h(ArtButtonTable, {
+          type: 'delete',
+          onClick: () => handleDelete(row)
+        })
+      }
+    }
+  ]
+
+  // 使用动态列hook
+  const { columns, columnChecks } = useCheckedColumns(() => columnOptions)
+
   // 加载定时任务日志列表数据
   const loadLogList = async () => {
     loading.value = true
     try {
-      const res = await QuartzTaskLogService.getQuartzTaskLogPageList(queryParams)
+      const res = await QuartzTaskLogService.getQuartzTaskLogPageList(formFilters)
       if (res.success) {
         logList.value = res.data.records
         pagination.total = res.data.total
-        pagination.current = res.data.current
-        pagination.size = res.data.size
-        pagination.pages = res.data.pages
       } else {
         ElMessage.error(res.message || '获取定时任务日志列表失败')
       }
@@ -174,16 +204,13 @@
 
   // 搜索
   const search = () => {
-    queryParams.page = 1 // 搜索时重置为第一页
+    formFilters.page = 1 // 搜索时重置为第一页
     loadLogList()
   }
 
   // 重置查询
-  const resetQuery = () => {
-    queryParams.name = undefined
-    queryParams.page = 1
-    queryParams.limit = 10
-    queryParams.sortByCreateDateAsc = false
+  const handleReset = () => {
+    Object.assign(formFilters, initialSearchState)
     loadLogList()
   }
 
@@ -194,20 +221,15 @@
 
   // 处理分页变化
   const handleCurrentChange = (page: number) => {
-    queryParams.page = page
+    formFilters.page = page
     loadLogList()
   }
 
   // 处理每页显示数量变化
   const handleSizeChange = (size: number) => {
-    queryParams.limit = size
-    queryParams.page = 1 // 切换每页数量时重置为第一页
+    formFilters.limit = size
+    formFilters.page = 1 // 切换每页数量时重置为第一页
     loadLogList()
-  }
-
-  // 列显示设置
-  const changeColumn = (list: any) => {
-    Object.assign(columns, list)
   }
 
   // 处理单个删除
@@ -233,6 +255,7 @@
       })
       .catch(() => {
         // 用户取消操作
+        ElMessage.info('用户取消删除操作')
       })
   }
 
@@ -271,6 +294,7 @@
       })
       .catch(() => {
         // 用户取消操作
+        ElMessage.info('用户取消批量删除操作')
       })
   }
 
@@ -281,7 +305,7 @@
 </script>
 
 <style lang="scss" scoped>
-  .page-content {
+  .quartz-task-log-page {
     width: 100%;
     height: 100%;
   }

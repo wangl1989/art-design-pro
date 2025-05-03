@@ -1,172 +1,117 @@
 <template>
-  <div class="page-content">
-    <table-bar
-      :showTop="false"
-      @search="search"
-      @reset="resetQuery"
-      @changeColumn="changeColumn"
-      :columns="columns"
-    >
-      <template #top>
-        <el-form :model="queryParams" inline>
-          <el-row :gutter="15">
-            <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item label="任务名称：">
-                <el-input v-model="queryParams.name" placeholder="请输入任务名称搜索"></el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :xs="19" :sm="12" :lg="6">
-              <el-form-item label="任务状态：">
-                <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
-                  <el-option label="正常" :value="0"></el-option>
-                  <el-option label="暂停" :value="1"></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
-      </template>
-      <template #bottom>
-        <el-button type="primary" @click="handleAdd" v-auth="'quartzjob_add'" v-ripple
-          >新增任务</el-button
+  <ArtTableFullScreen>
+    <div class="quartz-task-page" id="table-full-screen">
+      <!-- 搜索栏 -->
+      <ArtSearchBar
+        v-model:filter="formFilters as any"
+        :items="formItems"
+        @reset="handleReset"
+        @search="search"
+        :isExpand="true"
+      ></ArtSearchBar>
+      <ElCard shadow="never" class="art-table-card">
+        <!-- 表格头部 -->
+        <ArtTableHeader
+          :columnList="columnOptions"
+          v-model:columns="columnChecks"
+          @refresh="loadTaskList"
         >
-        <el-button type="danger" @click="handleBatchDelete" v-auth="'quartzjob_delete'" v-ripple
-          >批量删除</el-button
+          <template #left>
+            <ElButton @click="handleAdd" v-auth="'quartzjob_add'" v-ripple>新增任务</ElButton>
+            <ElButton type="danger" @click="handleBatchDelete" v-auth="'quartzjob_delete'" v-ripple
+              >批量删除</ElButton
+            >
+            <ElButton type="warning" @click="handleBatchPause" v-auth="'quartzjob_pause'" v-ripple
+              >批量暂停</ElButton
+            >
+            <ElButton type="success" @click="handleBatchResume" v-auth="'quartzjob_resume'" v-ripple
+              >批量恢复</ElButton
+            >
+            <ElButton type="info" @click="handleBatchRun" v-auth="'quartzjob_run'" v-ripple
+              >立即执行</ElButton
+            >
+          </template>
+        </ArtTableHeader>
+        <!-- 表格 -->
+        <ArtTable
+          :data="taskList"
+          selection
+          v-loading="loading"
+          :currentPage="formFilters.page"
+          :pageSize="formFilters.limit"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+          @selection-change="handleSelectionChange"
+          height="100%"
+          :marginTop="10"
         >
-        <el-button type="warning" @click="handleBatchPause" v-auth="'quartzjob_pause'" v-ripple
-          >批量暂停</el-button
-        >
-        <el-button type="success" @click="handleBatchResume" v-auth="'quartzjob_resume'" v-ripple
-          >批量恢复</el-button
-        >
-        <el-button type="info" @click="handleBatchRun" v-auth="'quartzjob_run'" v-ripple
-          >立即执行</el-button
-        >
-      </template>
-    </table-bar>
+          <template #default>
+            <ElTableColumn v-for="col in columns" :key="col.prop || col.type" v-bind="col" />
+          </template>
+        </ArtTable>
+      </ElCard>
 
-    <art-table
-      :data="taskList"
-      selection
-      v-loading="loading"
-      pagination
-      :currentPage="pagination.current"
-      :pageSize="pagination.size"
-      :total="pagination.total"
-      @current-change="handleCurrentChange"
-      @size-change="handleSizeChange"
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column label="任务组名" prop="groupName" min-width="150" v-if="columns[0].show" />
-      <el-table-column label="任务名称" prop="name" min-width="150" v-if="columns[1].show" />
-      <el-table-column label="Cron表达式" prop="cron" min-width="150" v-if="columns[2].show" />
-      <el-table-column label="目标Bean" prop="targetBean" min-width="180" v-if="columns[3].show" />
-      <el-table-column label="目标方法" prop="trgetMethod" min-width="120" v-if="columns[4].show" />
-      <el-table-column label="参数" prop="params" min-width="120" v-if="columns[5].show" />
-      <el-table-column label="状态" prop="status" width="100" v-if="columns[6].show">
-        <template #default="scope">
-          <el-tag :type="scope.row.status === 0 ? 'success' : 'warning'" size="small">
-            {{ scope.row.status === 0 ? '正常' : '暂停' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column
-        label="更新时间"
-        prop="updateDate"
-        min-width="180"
-        sortable
-        v-if="columns[6].show"
-      />
-      <el-table-column label="操作" fixed="right" width="320" v-if="columns[7].show">
-        <template #default="scope">
-          <el-button type="primary" link v-auth="'quartzjob_edit'" @click="handleEdit(scope.row)"
-            >编辑</el-button
-          >
-          <el-button type="danger" link v-auth="'quartzjob_delete'" @click="handleDelete(scope.row)"
-            >删除</el-button
-          >
-          <el-button
-            type="warning"
-            link
-            v-auth="'quartzjob_pause'"
-            v-if="scope.row.status === 0"
-            @click="handlePause(scope.row)"
-            >暂停</el-button
-          >
-          <el-button
-            type="success"
-            link
-            v-auth="'quartzjob_resume'"
-            v-if="scope.row.status !== 0"
-            @click="handleResume(scope.row)"
-            >恢复</el-button
-          >
-          <el-button type="info" link v-auth="'quartzjob_run'" @click="handleRun(scope.row)"
-            >执行</el-button
-          >
-        </template>
-      </el-table-column>
-    </art-table>
-
-    <!-- 添加/编辑对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogType === 'add' ? '新增定时任务' : '编辑定时任务'"
-      width="600px"
-      :close-on-click-modal="false"
-      :destroy-on-close="true"
-    >
-      <el-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        label-width="100px"
-        label-position="right"
+      <!-- 添加/编辑对话框 -->
+      <ElDialog
+        v-model="dialogVisible"
+        :title="dialogType === 'add' ? '新增定时任务' : '编辑定时任务'"
+        width="600px"
+        :close-on-click-modal="false"
+        :destroy-on-close="true"
       >
-        <el-form-item label="任务组名" prop="groupName">
-          <el-input v-model="formData.groupName" placeholder="请输入任务组名" />
-        </el-form-item>
-        <el-form-item label="任务名称" prop="name">
-          <el-input v-model="formData.name" placeholder="请输入任务名称" />
-        </el-form-item>
-        <el-form-item label="Cron表达式" prop="cron">
-          <el-input v-model="formData.cron" placeholder="请输入Cron表达式" />
-        </el-form-item>
-        <el-form-item label="目标Bean" prop="targetBean">
-          <el-input v-model="formData.targetBean" placeholder="请输入目标Bean名称" />
-        </el-form-item>
-        <el-form-item label="目标方法" prop="trgetMethod">
-          <el-input v-model="formData.trgetMethod" placeholder="请输入目标方法名称" />
-        </el-form-item>
-        <el-form-item label="执行参数" prop="params">
-          <el-input v-model="formData.params" placeholder="请输入执行参数" />
-        </el-form-item>
-        <el-form-item label="任务状态" prop="status">
-          <el-radio-group v-model="formData.status">
-            <el-radio :value="0">正常</el-radio>
-            <el-radio :value="1">暂停</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="备注" prop="remarks">
-          <el-input
-            v-model="formData.remarks"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入备注信息"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm" :loading="submitLoading">确定</el-button>
-      </template>
-    </el-dialog>
-  </div>
+        <ElForm
+          ref="formRef"
+          :model="formData"
+          :rules="formRules"
+          label-width="100px"
+          label-position="right"
+        >
+          <ElFormItem label="任务组名" prop="groupName">
+            <ElInput v-model="formData.groupName" placeholder="请输入任务组名" />
+          </ElFormItem>
+          <ElFormItem label="任务名称" prop="name">
+            <ElInput v-model="formData.name" placeholder="请输入任务名称" />
+          </ElFormItem>
+          <ElFormItem label="Cron表达式" prop="cron">
+            <ElInput v-model="formData.cron" placeholder="请输入Cron表达式" />
+          </ElFormItem>
+          <ElFormItem label="目标Bean" prop="targetBean">
+            <ElInput v-model="formData.targetBean" placeholder="请输入目标Bean名称" />
+          </ElFormItem>
+          <ElFormItem label="目标方法" prop="trgetMethod">
+            <ElInput v-model="formData.trgetMethod" placeholder="请输入目标方法名称" />
+          </ElFormItem>
+          <ElFormItem label="执行参数" prop="params">
+            <ElInput v-model="formData.params" placeholder="请输入执行参数" />
+          </ElFormItem>
+          <ElFormItem label="任务状态" prop="status">
+            <ElRadioGroup v-model="formData.status">
+              <ElRadio :value="0">正常</ElRadio>
+              <ElRadio :value="1">暂停</ElRadio>
+            </ElRadioGroup>
+          </ElFormItem>
+          <ElFormItem label="备注" prop="remarks">
+            <ElInput
+              v-model="formData.remarks"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入备注信息"
+            />
+          </ElFormItem>
+        </ElForm>
+        <template #footer>
+          <ElButton @click="dialogVisible = false">取消</ElButton>
+          <ElButton type="primary" @click="submitForm" :loading="submitLoading">确定</ElButton>
+        </template>
+      </ElDialog>
+    </div>
+  </ArtTableFullScreen>
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, onMounted } from 'vue'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ref, reactive, onMounted, h } from 'vue'
+  import { ElMessage, ElMessageBox, ElTag, ElButton, ElSpace } from 'element-plus'
   import { QuartzTaskService } from '@/api/quartzTaskApi'
   import {
     QuartzTaskRecordModel,
@@ -175,6 +120,9 @@
     EditQuartzTaskParams
   } from '@/api/model/quartzTaskModel'
   import type { FormInstance, FormRules } from 'element-plus'
+  import { useCheckedColumns, type ColumnOption } from '@/composables/useCheckedColumns'
+  import ArtButtonTable from '@/components/core/forms/ArtButtonTable.vue'
+  import type { SearchFormItem } from '@/types/search-form'
 
   // 加载状态
   const loading = ref(false)
@@ -186,34 +134,21 @@
   // 选中的任务记录
   const selectedTasks = ref<QuartzTaskRecordModel[]>([])
 
-  // 列配置
-  const columns = reactive([
-    { name: '任务组名', show: true },
-    { name: '任务名称', show: true },
-    { name: 'Cron表达式', show: true },
-    { name: '目标Bean', show: true },
-    { name: '目标方法', show: true },
-    { name: '参数', show: true },
-    { name: '状态', show: true },
-    { name: '创建时间', show: true },
-    { name: '操作', show: true }
-  ])
-
-  // 查询参数
-  const queryParams = reactive<QuartzTaskListParams>({
-    page: 1,
-    limit: 10,
+  // 初始化搜索条件
+  const initialSearchState = {
     name: '',
     status: undefined,
+    page: 1,
+    limit: 10,
     sortByCreateDateAsc: false
-  })
+  }
+
+  // 搜索表单数据
+  const formFilters = reactive<QuartzTaskListParams>({ ...initialSearchState })
 
   // 分页信息
   const pagination = reactive({
-    current: 1,
-    size: 10,
-    total: 0,
-    pages: 0
+    total: 0
   })
 
   // 对话框相关
@@ -245,17 +180,106 @@
     status: [{ required: true, message: '请选择任务状态', trigger: 'change' }]
   })
 
+  // 搜索表单配置
+  const formItems: SearchFormItem[] = [
+    {
+      label: '任务名称',
+      prop: 'name',
+      type: 'input',
+      elColSpan: 5,
+      config: {
+        placeholder: '请输入任务名称搜索',
+        clearable: true
+      }
+    },
+    {
+      label: '任务状态',
+      prop: 'status',
+      type: 'select',
+      options: () => [
+        { label: '正常', value: 0 },
+        { label: '暂停', value: 1 }
+      ],
+      config: {
+        placeholder: '请选择状态',
+        clearable: true
+      }
+    }
+  ]
+
+  // 表格列配置
+  const columnOptions: ColumnOption[] = [
+    { prop: 'groupName', label: '任务组名', minWidth: 150 },
+    { prop: 'name', label: '任务名称', minWidth: 150 },
+    { prop: 'cron', label: 'Cron表达式', minWidth: 150 },
+    { prop: 'targetBean', label: '目标Bean', minWidth: 180 },
+    { prop: 'trgetMethod', label: '目标方法', minWidth: 120 },
+    { prop: 'params', label: '参数', minWidth: 120 },
+    {
+      prop: 'status',
+      label: '状态',
+      width: 100,
+      formatter: (row) => {
+        return h(
+          ElTag,
+          {
+            type: row.status === 0 ? 'success' : 'warning',
+            size: 'small'
+          },
+          () => (row.status === 0 ? '正常' : '暂停')
+        )
+      }
+    },
+    { prop: 'updateDate', label: '更新时间', minWidth: 180, sortable: true },
+    {
+      prop: 'actions',
+      label: '操作',
+      fixed: 'right',
+      width: 320,
+      formatter: (row) => {
+        return h(ElSpace, { size: 'small' }, () => [
+          h(ArtButtonTable, {
+            type: 'edit',
+            auth: 'quartzjob_edit',
+            onClick: () => handleEdit(row)
+          }),
+          h(ArtButtonTable, {
+            type: 'delete',
+            auth: 'quartzjob_delete',
+            onClick: () => handleDelete(row)
+          }),
+          row.status === 0
+            ? h(ArtButtonTable, {
+                type: 'warning',
+                auth: 'quartzjob_pause',
+                onClick: () => handlePause(row)
+              })
+            : h(ArtButtonTable, {
+                type: 'success',
+                auth: 'quartzjob_resume',
+                onClick: () => handleResume(row)
+              }),
+          h(ArtButtonTable, {
+            type: 'info',
+            auth: 'quartzjob_run',
+            onClick: () => handleRun(row)
+          })
+        ])
+      }
+    }
+  ]
+
+  // 使用动态列hook
+  const { columns, columnChecks } = useCheckedColumns(() => columnOptions)
+
   // 加载定时任务列表数据
   const loadTaskList = async () => {
     loading.value = true
     try {
-      const res = await QuartzTaskService.getQuartzTaskPageList(queryParams)
+      const res = await QuartzTaskService.getQuartzTaskPageList(formFilters)
       if (res.success) {
         taskList.value = res.data.records
         pagination.total = res.data.total
-        pagination.current = res.data.current
-        pagination.size = res.data.size
-        pagination.pages = res.data.pages
       } else {
         ElMessage.error(res.message || '获取定时任务列表失败')
       }
@@ -269,17 +293,13 @@
 
   // 搜索
   const search = () => {
-    queryParams.page = 1 // 搜索时重置为第一页
+    formFilters.page = 1 // 搜索时重置为第一页
     loadTaskList()
   }
 
   // 重置查询
-  const resetQuery = () => {
-    queryParams.name = ''
-    queryParams.status = undefined
-    queryParams.page = 1
-    queryParams.limit = 10
-    queryParams.sortByCreateDateAsc = false
+  const handleReset = () => {
+    Object.assign(formFilters, initialSearchState)
     loadTaskList()
   }
 
@@ -290,20 +310,15 @@
 
   // 处理分页变化
   const handleCurrentChange = (page: number) => {
-    queryParams.page = page
+    formFilters.page = page
     loadTaskList()
   }
 
   // 处理每页显示数量变化
   const handleSizeChange = (size: number) => {
-    queryParams.limit = size
-    queryParams.page = 1 // 切换每页数量时重置为第一页
+    formFilters.limit = size
+    formFilters.page = 1 // 切换每页数量时重置为第一页
     loadTaskList()
-  }
-
-  // 列显示设置
-  const changeColumn = (list: any) => {
-    Object.assign(columns, list)
   }
 
   // 处理添加任务
@@ -327,7 +342,7 @@
     formData.trgetMethod = row.trgetMethod
     formData.params = row.params
     formData.status = row.status
-    formData.remarks = row.remarks // API中有此字段但模型中没有对应数据
+    formData.remarks = row.remarks
 
     dialogVisible.value = true
   }
@@ -534,6 +549,7 @@
       })
       .catch(() => {
         // 用户取消操作
+        ElMessage.info('用户取消恢复任务')
       })
   }
 
@@ -566,6 +582,7 @@
       })
       .catch(() => {
         // 用户取消操作
+        ElMessage.info('用户取消批量恢复任务')
       })
   }
 
@@ -591,6 +608,7 @@
       })
       .catch(() => {
         // 用户取消操作
+        ElMessage.info('用户取消执行任务')
       })
   }
 
@@ -622,6 +640,7 @@
       })
       .catch(() => {
         // 用户取消操作
+        ElMessage.info('用户取消立即执行选中的任务')
       })
   }
 
@@ -632,7 +651,7 @@
 </script>
 
 <style lang="scss" scoped>
-  .page-content {
+  .quartz-task-page {
     width: 100%;
     height: 100%;
   }

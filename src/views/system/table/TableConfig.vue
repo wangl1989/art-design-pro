@@ -1,300 +1,186 @@
 <template>
-  <div class="page-content">
-    <table-bar
-      ref="tableBarRef"
-      :showTop="false"
-      @search="search"
-      @reset="resetQuery"
-      @changeColumn="changeColumn"
-      :columns="columns"
-    >
-      <template #top>
-        <el-form
-          :model="queryParams"
-          ref="searchFormRef"
-          inline
-          label-width="80px"
-          class="compact-form"
-        >
-          <el-row :gutter="0">
-            <el-col :span="5">
-              <el-form-item label="表格名称:">
-                <el-input
-                  v-model="queryParams.tableName"
-                  placeholder="请输入表格名称搜索"
-                  style="width: 180px"
-                ></el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="5">
-              <el-form-item label="数据库名:">
-                <el-input
-                  v-model="queryParams.schemaName"
-                  placeholder="请输入数据库名称搜索"
-                  style="width: 180px"
-                ></el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="5">
-              <el-form-item label="业务名称:">
-                <el-input
-                  v-model="queryParams.businessName"
-                  placeholder="请输入业务名称搜索"
-                  style="width: 180px"
-                ></el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="5">
-              <el-form-item label="配置状态:">
-                <el-select
-                  v-model="queryParams.delFlag"
-                  placeholder="请选择配置状态"
-                  clearable
-                  style="width: 180px"
-                >
-                  <el-option label="正常" :value="false"></el-option>
-                  <el-option label="已删除" :value="true"></el-option>
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="4" class="search-buttons">
-              <el-button type="primary" @click="search" v-ripple>搜索</el-button>
-              <el-button @click="resetQuery" v-ripple>重置</el-button>
-            </el-col>
-          </el-row>
-        </el-form>
-      </template>
-      <template #search-buttons>
-        <!-- 这里故意留空，按钮已经移到表单内部 -->
-      </template>
-      <template #bottom>
-        <el-button type="primary" @click="handleAdd" v-auth="'tableconfig_add'" v-ripple
-          >新增表格配置</el-button
-        >
-        <el-button
-          type="danger"
-          @click="handleBatchDelete"
-          v-auth="'tableconfig_batch_delete'"
-          v-ripple
-          >批量删除</el-button
-        >
-        <el-button
-          type="success"
-          @click="handleDownloadCode"
-          v-auth="'tableconfig_download'"
-          v-ripple
-          >下载源码</el-button
-        >
-      </template>
-    </table-bar>
+  <ArtTableFullScreen>
+    <div class="tableconfig-page" id="table-full-screen">
+      <!-- 搜索栏 -->
+      <ArtSearchBar
+        v-model:filter="formFilters as any"
+        :items="formItems"
+        @reset="resetQuery"
+        @search="search"
+        :isExpand="true"
+      ></ArtSearchBar>
 
-    <art-table
-      :data="tableConfigList"
-      selection
-      v-loading="loading"
-      pagination
-      :currentPage="pagination.current"
-      :pageSize="pagination.size"
-      :total="pagination.total"
-      @current-change="handleCurrentChange"
-      @size-change="handleSizeChange"
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column label="表格类型" prop="tableType" v-if="columns[0].show">
-        <template #default="scope">
-          <el-tag>{{ getTableTypeText(scope.row.tableType) }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="表格名称" prop="tableName" v-if="columns[1].show" />
-      <el-table-column label="表格前缀" prop="tablePrefix" v-if="columns[2].show" />
-      <el-table-column label="数据库名称" prop="schemaName" v-if="columns[3].show" />
-      <el-table-column label="业务名称" prop="businessName" v-if="columns[4].show" />
-      <el-table-column label="模块名称" prop="moduleName" v-if="columns[5].show" />
-      <el-table-column label="包名称" prop="packageName" v-if="columns[6].show" />
-      <el-table-column label="作者" prop="author" v-if="columns[7].show" />
-      <el-table-column label="生成路径" prop="generatePath" v-if="columns[8].show" />
-      <el-table-column label="可配置字段" prop="fieldCount" v-if="columns[9].show">
-        <template #default="scope">
-          <div v-if="scope.row.fieldCount > 0">
-            <el-button
-              type="primary"
-              link
-              v-auth="'tableconfig_config_field'"
-              @click="openFieldConfig(scope.row)"
+      <ElCard shadow="never" class="art-table-card">
+        <!-- 表格头部 -->
+        <ArtTableHeader
+          :columnList="columnOptions"
+          v-model:columns="columnChecks"
+          @refresh="loadTableConfigList"
+        >
+          <template #left>
+            <ElButton type="primary" @click="handleAdd" v-auth="'tableconfig_add'" v-ripple>
+              新增表格配置
+            </ElButton>
+            <ElButton
+              type="danger"
+              @click="handleBatchDelete"
+              v-auth="'tableconfig_batch_delete'"
+              v-ripple
             >
-              共 {{ scope.row.fieldCount }} 个字段
-            </el-button>
-          </div>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="备注" prop="remarks" v-if="columns[10].show" />
-      <el-table-column label="更新时间" prop="updateDate" v-if="columns[11].show">
-        <template #default="scope">
-          {{ formatDate(scope.row.updateDate) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" prop="delFlag" v-if="columns[12].show">
-        <template #default="scope">
-          <el-tag :type="scope.row.delFlag ? 'danger' : 'success'">
-            {{ scope.row.delFlag ? '已删除' : '正常' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" fixed="right" width="220" v-if="columns[13].show">
-        <template #default="scope">
-          <el-button
-            type="primary"
-            link
-            v-auth="'tableconfig_edit'"
-            @click="handleEdit(scope.row)"
-            v-if="!scope.row.delFlag"
-          >
-            编辑
-          </el-button>
-          <el-button
-            type="info"
-            link
-            v-auth="'tableconfig_sync_field'"
-            @click="handleSyncFields(scope.row)"
-            v-if="!scope.row.delFlag"
-          >
-            同步字段
-          </el-button>
-          <el-button
-            type="danger"
-            link
-            v-auth="'tableconfig_delete'"
-            @click="handleDelete(scope.row)"
-            v-if="!scope.row.delFlag"
-          >
-            删除
-          </el-button>
-          <el-button
-            type="success"
-            link
-            v-auth="'tableconfig_recover'"
-            @click="handleRecover(scope.row)"
-            v-if="scope.row.delFlag"
-          >
-            恢复
-          </el-button>
-        </template>
-      </el-table-column>
-    </art-table>
+              批量删除
+            </ElButton>
+            <ElButton
+              type="success"
+              @click="handleDownloadCode"
+              v-auth="'tableconfig_download'"
+              v-ripple
+            >
+              下载源码
+            </ElButton>
+          </template>
+        </ArtTableHeader>
 
-    <!-- 添加/编辑对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogType === 'add' ? '新增表格配置' : '编辑表格配置'"
-      width="580px"
-      :close-on-click-modal="false"
-    >
-      <el-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        label-width="100px"
-        label-position="right"
+        <!-- 表格 -->
+        <ArtTable
+          :data="tableConfigList"
+          selection
+          v-loading="loading"
+          :currentPage="formFilters.page"
+          :pageSize="formFilters.limit"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+          @selection-change="handleSelectionChange"
+          height="100%"
+          :marginTop="10"
+        >
+          <template #default>
+            <ElTableColumn v-for="col in columns" :key="col.prop || col.type" v-bind="col" />
+          </template>
+        </ArtTable>
+      </ElCard>
+
+      <!-- 添加/编辑对话框 -->
+      <ElDialog
+        v-model="dialogVisible"
+        :title="dialogType === 'add' ? '新增表格配置' : '编辑表格配置'"
+        width="580px"
+        :close-on-click-modal="false"
       >
-        <el-form-item label="数据库名称" prop="schemaName">
-          <el-select
-            v-model="formData.schemaName"
-            placeholder="请选择数据库名称"
-            filterable
-            clearable
-            @change="handleSchemaChange"
-            style="width: 100%"
-          >
-            <el-option v-for="item in schemaNameList" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="表格名称" prop="tableName">
-          <el-select
-            v-model="formData.tableName"
-            placeholder="请选择表格名称"
-            filterable
-            clearable
-            style="width: 100%"
-            :disabled="!formData.schemaName"
-          >
-            <el-option v-for="item in tableNameList" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="表格前缀" prop="tablePrefix">
-          <el-input v-model="formData.tablePrefix" placeholder="请输入表格前缀" />
-        </el-form-item>
-        <el-form-item label="业务名称" prop="businessName">
-          <el-input v-model="formData.businessName" placeholder="请输入业务名称" />
-        </el-form-item>
-        <el-form-item label="模块名称" prop="moduleName">
-          <el-input v-model="formData.moduleName" placeholder="请输入模块名称" />
-        </el-form-item>
-        <el-form-item label="包名称" prop="packageName">
-          <el-input v-model="formData.packageName" placeholder="请输入包名称" />
-        </el-form-item>
-        <el-form-item label="作者" prop="author">
-          <el-input v-model="formData.author" placeholder="请输入作者" />
-        </el-form-item>
-        <el-form-item label="生成路径" prop="generatePath">
-          <el-input v-model="formData.generatePath" placeholder="请输入生成路径" />
-        </el-form-item>
-        <el-form-item label="选项" prop="options">
-          <el-input
-            v-model="formData.options"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入选项，如JSON格式配置"
-          />
-        </el-form-item>
-        <el-form-item label="备注" prop="remarks">
-          <el-input
-            v-model="formData.remarks"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入备注信息"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm" :loading="submitLoading">确定</el-button>
-      </template>
-    </el-dialog>
+        <el-form
+          ref="formRef"
+          :model="formData"
+          :rules="formRules"
+          label-width="100px"
+          label-position="right"
+        >
+          <el-form-item label="数据库名称" prop="schemaName">
+            <el-select
+              v-model="formData.schemaName"
+              placeholder="请选择数据库名称"
+              filterable
+              clearable
+              @change="handleSchemaChange"
+              style="width: 100%"
+            >
+              <el-option v-for="item in schemaNameList" :key="item" :label="item" :value="item" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="表格名称" prop="tableName">
+            <el-select
+              v-model="formData.tableName"
+              placeholder="请选择表格名称"
+              filterable
+              clearable
+              style="width: 100%"
+              :disabled="!formData.schemaName"
+            >
+              <el-option v-for="item in tableNameList" :key="item" :label="item" :value="item" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="表格前缀" prop="tablePrefix">
+            <el-input v-model="formData.tablePrefix" placeholder="请输入表格前缀" />
+          </el-form-item>
+          <el-form-item label="业务名称" prop="businessName">
+            <el-input v-model="formData.businessName" placeholder="请输入业务名称" />
+          </el-form-item>
+          <el-form-item label="模块名称" prop="moduleName">
+            <el-input v-model="formData.moduleName" placeholder="请输入模块名称" />
+          </el-form-item>
+          <el-form-item label="包名称" prop="packageName">
+            <el-input v-model="formData.packageName" placeholder="请输入包名称" />
+          </el-form-item>
+          <el-form-item label="作者" prop="author">
+            <el-input v-model="formData.author" placeholder="请输入作者" />
+          </el-form-item>
+          <el-form-item label="生成路径" prop="generatePath">
+            <el-input v-model="formData.generatePath" placeholder="请输入生成路径" />
+          </el-form-item>
+          <el-form-item label="选项" prop="options">
+            <el-input
+              v-model="formData.options"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入选项，如JSON格式配置"
+            />
+          </el-form-item>
+          <el-form-item label="备注" prop="remarks">
+            <el-input
+              v-model="formData.remarks"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入备注信息"
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitForm" :loading="submitLoading">确定</el-button>
+        </template>
+      </ElDialog>
 
-    <!-- 字段配置组件 -->
-    <TableFieldConfig
-      :visible="showFieldConfig"
-      @update:visible="showFieldConfig = $event"
-      :tableConfig="currentTableConfig"
-      :fieldList="fieldList"
-      :loading="fieldListLoading"
-      @refresh="refreshTableData"
-    />
-  </div>
+      <!-- 字段配置组件 -->
+      <TableFieldConfig
+        :visible="showFieldConfig"
+        @update:visible="showFieldConfig = $event"
+        :tableConfig="currentTableConfig"
+        @refresh="refreshTableData"
+      />
+    </div>
+  </ArtTableFullScreen>
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, onMounted } from 'vue'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ref, reactive, onMounted, h } from 'vue'
+  import {
+    ElMessage,
+    ElMessageBox,
+    ElButton,
+    ElTag,
+    ElSpace,
+    ElForm,
+    ElFormItem,
+    ElInput,
+    ElSelect,
+    ElOption,
+    ElDialog,
+    ElTableColumn
+  } from 'element-plus'
   import { TableService } from '@/api/tableConfigApi'
   import {
     TableConfigModel,
     TableConfigListParams,
     BaseTableConfig,
     TableTypeTextMap,
-    SyncTableFieldListParams,
-    TableFieldConfigModel
+    SyncTableFieldListParams
   } from '@/api/model/tableConfigModel'
   import type { FormInstance, FormRules } from 'element-plus'
   import { formatDate } from '@/utils/date'
   import TableFieldConfig from './TableFieldConfig.vue'
+  import ArtButtonTable from '@/components/core/forms/ArtButtonTable.vue'
+  import { useCheckedColumns, ColumnOption } from '@/composables/useCheckedColumns'
+  import type { SearchFormItem } from '@/types/search-form'
   import FileSaver from 'file-saver'
-
-  // 表格栏引用
-  const tableBarRef = ref()
-  // 搜索表单引用
-  const searchFormRef = ref<FormInstance>()
 
   // 加载状态
   const loading = ref(false)
@@ -310,49 +196,189 @@
   // 选中的表格配置记录
   const selectedConfigs = ref<TableConfigModel[]>([])
 
-  // 当前选中的表格配置和字段列表(用于字段管理)
+  // 当前选中的表格配置(用于字段管理)
   const currentTableConfig = ref<TableConfigModel | undefined>(undefined)
-  const fieldList = ref<TableFieldConfigModel[]>([])
-  // 字段配置对话框显示状态和加载状态
+  // 字段配置对话框显示状态
   const showFieldConfig = ref(false)
-  const fieldListLoading = ref(false)
 
-  // 列配置
-  const columns = reactive([
-    { name: '表格类型', show: true },
-    { name: '表格名称', show: true },
-    { name: '表格前缀', show: false },
-    { name: '数据库名称', show: true },
-    { name: '业务名称', show: true },
-    { name: '模块名称', show: false },
-    { name: '包名称', show: false },
-    { name: '作者', show: true },
-    { name: '生成路径', show: false },
-    { name: '可配置字段', show: true },
-    { name: '备注', show: true },
-    { name: '更新时间', show: true },
-    { name: '状态', show: false },
-    { name: '操作', show: true }
-  ])
-
-  // 查询参数
-  const queryParams = reactive<TableConfigListParams>({
+  // 搜索表单初始值
+  const initialSearchState = {
     page: 1,
     limit: 10,
     tableName: '',
     schemaName: '',
     businessName: '',
-    delFlag: false,
+    delFlag: undefined,
     sortByUpdateDateAsc: false
+  }
+
+  // 响应式搜索表单数据
+  const formFilters = reactive<TableConfigListParams & { delFlag?: string }>({
+    ...initialSearchState,
+    delFlag: undefined
   })
 
   // 分页信息
   const pagination = reactive({
-    current: 1,
-    size: 10,
-    total: 0,
-    pages: 0
+    total: 0
   })
+
+  // 搜索栏配置
+  const formItems: SearchFormItem[] = [
+    {
+      label: '表格名称',
+      prop: 'tableName',
+      type: 'input',
+      elColSpan: 5,
+      config: {
+        placeholder: '请输入表格名称',
+        clearable: true
+      }
+    },
+    {
+      label: '数据库名称',
+      labelWidth: '100px',
+      prop: 'schemaName',
+      type: 'select',
+      elColSpan: 5,
+      options: () => schemaNameList.value.map((name) => ({ label: name, value: name })),
+      config: {
+        placeholder: '请选择数据库名称',
+        clearable: true
+      }
+    },
+    {
+      label: '业务名称',
+      labelWidth: '100px',
+      prop: 'businessName',
+      type: 'input',
+      elColSpan: 6,
+      config: {
+        placeholder: '请输入业务名称',
+        clearable: true
+      }
+    },
+    {
+      label: '配置状态',
+      labelWidth: '100px',
+      prop: 'delFlag',
+      type: 'select',
+      elColSpan: 5,
+      options: () => [
+        { label: '正常', value: '0' },
+        { label: '已删除', value: '1' }
+      ],
+      config: {
+        placeholder: '请选择配置状态',
+        clearable: true
+      }
+    }
+  ]
+
+  // 表格列配置
+  const columnOptions: ColumnOption[] = [
+    { label: '勾选', type: 'selection' },
+    {
+      prop: 'tableType',
+      label: '表格类型',
+      minWidth: 120,
+      formatter: (row) => h(ElTag, null, () => getTableTypeText(row.tableType))
+    },
+    { prop: 'tableName', label: '表格名称', minWidth: 180 },
+    { prop: 'tablePrefix', label: '表格前缀', minWidth: 120, checked: false },
+    { prop: 'schemaName', label: '数据库名称', minWidth: 150 },
+    { prop: 'businessName', label: '业务名称', minWidth: 150 },
+    { prop: 'moduleName', label: '模块名称', minWidth: 150, checked: false },
+    { prop: 'packageName', label: '包名称', minWidth: 150, checked: false },
+    { prop: 'author', label: '作者', minWidth: 120 },
+    { prop: 'generatePath', label: '生成路径', minWidth: 200, checked: false },
+    {
+      prop: 'fieldCount',
+      label: '可配置字段',
+      minWidth: 120,
+      formatter: (row) => {
+        if (row.fieldCount > 0) {
+          return h(
+            ElButton,
+            {
+              type: 'primary',
+              link: true,
+              onClick: () => openFieldConfig(row)
+            },
+            () => `共 ${row.fieldCount} 个字段`
+          )
+        } else {
+          return h('span', '-')
+        }
+      }
+    },
+    { prop: 'remarks', label: '备注', minWidth: 150 },
+    {
+      prop: 'updateDate',
+      label: '更新时间',
+      minWidth: 170,
+      formatter: (row) => (row.updateDate ? formatDate(row.updateDate) : '-')
+    },
+    {
+      prop: 'delFlag',
+      label: '状态',
+      minWidth: 100,
+      checked: false,
+      formatter: (row) =>
+        h(ElTag, { type: row.delFlag ? 'danger' : 'success' }, () =>
+          row.delFlag ? '已删除' : '正常'
+        )
+    },
+    {
+      prop: 'actions',
+      label: '操作',
+      fixed: 'right',
+      width: 220,
+      formatter: (row) =>
+        h(ElSpace, null, () => {
+          const buttons = []
+
+          if (!row.delFlag) {
+            buttons.push(
+              h(ArtButtonTable, {
+                type: 'edit',
+                auth: 'tableconfig_edit',
+                onClick: () => handleEdit(row)
+              }),
+              h(ArtButtonTable, {
+                text: '同步字段',
+                auth: 'tableconfig_sync_field',
+                onClick: () => handleSyncFields(row)
+              }),
+              h(ArtButtonTable, {
+                type: 'delete',
+                auth: 'tableconfig_delete',
+                onClick: () => handleDelete(row)
+              })
+            )
+          } else {
+            buttons.push(
+              h(ArtButtonTable, {
+                icon: '&#xe64b',
+                iconColor: '#67c23a',
+                auth: 'tableconfig_recover',
+                onClick: () => handleRecover(row)
+              }),
+              h(ArtButtonTable, {
+                type: 'delete',
+                auth: 'tableconfig_complete_delete',
+                onClick: () => handleCompletelyDelete(row)
+              })
+            )
+          }
+
+          return buttons
+        })
+    }
+  ]
+
+  // 列定义与动态显隐 (Pass a function returning columnOptions)
+  const { columns, columnChecks } = useCheckedColumns(() => columnOptions)
 
   // 对话框相关
   const dialogVisible = ref(false)
@@ -391,16 +417,17 @@
   })
 
   // 加载表格配置列表数据
-  const loadTableConfigList = async () => {
+  const loadTableConfigList = async (params?: TableConfigListParams) => {
     loading.value = true
     try {
+      const queryParams: TableConfigListParams = params || {
+        ...formFilters,
+        delFlag: formFilters.delFlag === '1' ? true : false
+      }
       const res = await TableService.getTableConfigList(queryParams)
       if (res.success) {
         tableConfigList.value = res.data.records
         pagination.total = res.data.total
-        pagination.current = res.data.current
-        pagination.size = res.data.size
-        pagination.pages = res.data.pages
       } else {
         ElMessage.error(res.message || '获取表格配置列表失败')
       }
@@ -414,19 +441,26 @@
 
   // 搜索
   const search = () => {
-    queryParams.page = 1 // 搜索时重置为第一页
-    loadTableConfigList()
+    formFilters.page = 1 // 搜索时重置为第一页
+    // 将字符串类型的delFlag转换为布尔值传给API
+    const params: TableConfigListParams = { ...formFilters }
+    if (formFilters.delFlag === '1') {
+      params.delFlag = true
+    } else if (formFilters.delFlag === '0') {
+      params.delFlag = false
+    } else {
+      params.delFlag = undefined
+    }
+    // 使用转换后的参数
+    loadTableConfigList(params)
   }
 
   // 重置查询
   const resetQuery = () => {
-    queryParams.tableName = ''
-    queryParams.schemaName = ''
-    queryParams.businessName = ''
-    queryParams.delFlag = false
-    queryParams.page = 1
-    queryParams.limit = 10
-    queryParams.sortByUpdateDateAsc = false
+    Object.assign(formFilters, {
+      ...initialSearchState,
+      delFlag: undefined
+    }) // 重置为初始状态
     loadTableConfigList()
   }
 
@@ -476,7 +510,7 @@
         }
       })
       .catch(() => {
-        // 用户取消操作
+        ElMessage.info('取消了批量删除操作')
       })
   }
 
@@ -502,7 +536,37 @@
         }
       })
       .catch(() => {
-        // 用户取消操作
+        ElMessage.info('取消了删除操作')
+      })
+  }
+
+  // 处理彻底删除
+  const handleCompletelyDelete = (row: TableConfigModel) => {
+    ElMessageBox.confirm(
+      `确定要彻底删除表格配置 "${row.tableName}" 吗？这会把所有配置字段一并删除,且不能恢复！！！`,
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+      .then(async () => {
+        try {
+          const res = await TableService.completelyDeleteTableConfig(row.id)
+          if (res.success) {
+            ElMessage.success('彻底删除成功')
+            loadTableConfigList() // 重新加载数据
+          } else {
+            ElMessage.error(res.message || '彻底删除失败')
+          }
+        } catch (error) {
+          console.error('彻底删除表格配置失败:', error)
+          ElMessage.error('彻底删除表格配置时发生错误')
+        }
+      })
+      .catch(() => {
+        ElMessage.info('取消了彻底删除操作')
       })
   }
 
@@ -528,7 +592,7 @@
         }
       })
       .catch(() => {
-        // 用户取消操作
+        ElMessage.info('取消了恢复操作')
       })
   }
 
@@ -590,11 +654,6 @@
     formData.generatePath = ''
     formData.options = ''
     formData.remarks = ''
-
-    // 重置表单验证
-    if (formRef.value) {
-      formRef.value.resetFields()
-    }
   }
 
   // 提交表单
@@ -637,21 +696,16 @@
     })
   }
 
-  // 列显示设置
-  const changeColumn = (list: any) => {
-    Object.assign(columns, list)
-  }
-
   // 处理分页变化
   const handleCurrentChange = (page: number) => {
-    queryParams.page = page
+    formFilters.page = page
     loadTableConfigList()
   }
 
   // 处理每页显示数量变化
   const handleSizeChange = (size: number) => {
-    queryParams.limit = size
-    queryParams.page = 1 // 切换每页数量时重置为第一页
+    formFilters.limit = size
+    formFilters.page = 1 // 切换每页数量时重置为第一页
     loadTableConfigList()
   }
 
@@ -703,30 +757,12 @@
   }
 
   // 打开字段配置页面
-  const openFieldConfig = async (tableConfig: TableConfigModel) => {
+  const openFieldConfig = (tableConfig: TableConfigModel) => {
     // 设置当前选中的表格配置
     currentTableConfig.value = tableConfig
 
-    // 显示加载中
-    fieldListLoading.value = true
-
-    try {
-      // 根据表配置ID获取字段列表
-      const res = await TableService.getFieldListByTableConfigId({ tableConfigId: tableConfig.id })
-      if (res.success && res.data) {
-        // 设置字段列表
-        fieldList.value = res.data
-        // 显示字段配置对话框
-        showFieldConfig.value = true
-      } else {
-        ElMessage.error(res.message || '获取字段列表失败')
-      }
-    } catch (error) {
-      console.error('获取字段列表失败:', error)
-      ElMessage.error('获取字段列表时发生错误')
-    } finally {
-      fieldListLoading.value = false
-    }
+    // 直接显示字段配置对话框，让子组件自行加载数据
+    showFieldConfig.value = true
   }
 
   // 刷新表格数据
@@ -775,41 +811,17 @@
         }
       })
       .catch(() => {
-        // 用户取消操作
+        ElMessage.info('取消了下载操作')
       })
   }
 
   // 组件挂载时加载数据
-  onMounted(() => {
+  onMounted(async () => {
+    // 先加载数据库名称列表
+    await getSchemaNameList()
+    // 然后加载表格配置列表
     loadTableConfigList()
   })
 </script>
 
-<style lang="scss" scoped>
-  .page-content {
-    width: 100%;
-    height: 100%;
-  }
-
-  .search-buttons {
-    display: flex;
-    align-items: center;
-    height: 32px;
-    margin-top: 4px;
-
-    .el-button {
-      margin-right: 10px;
-
-      &:last-child {
-        margin-right: 0;
-      }
-    }
-  }
-
-  .compact-form {
-    .el-form-item {
-      margin-right: 0;
-      margin-bottom: 18px;
-    }
-  }
-</style>
+<style lang="scss" scoped></style>

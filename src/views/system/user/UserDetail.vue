@@ -4,9 +4,28 @@
       <div class="left-wrap">
         <div class="user-wrap box-style">
           <img class="bg" src="@imgs/user/bg.png" />
-          <img class="avatar" :src="formatAvatar(userDetail.icon, userDetail.id)" />
+          <div class="avatar-container">
+            <img
+              class="avatar"
+              :src="avatarPreviewUrl || formatAvatar(userDetail.icon, userDetail.id)"
+            />
+            <div class="avatar-upload-btn" v-if="isEdit">
+              <el-upload
+                class="upload-demo"
+                :action="''"
+                :auto-upload="false"
+                :show-file-list="false"
+                :on-change="handleAvatarChange"
+                accept="image/*"
+              >
+                <el-button type="primary" circle size="small">
+                  <el-icon><Upload /></el-icon>
+                </el-button>
+              </el-upload>
+            </div>
+          </div>
           <h2 class="name">{{ userDetail.nickName || userInfo.username }}</h2>
-          <p class="des">{{ form.des || 'Art Design Pro 是一款漂亮的后台管理系统模版.' }}</p>
+          <p class="des">{{ form.des }}</p>
 
           <div class="outer-info">
             <div>
@@ -15,13 +34,22 @@
             </div>
             <div>
               <i class="iconfont-sys">&#xe608;</i>
-              <span>
-                {{
-                  userDetail.roles && userDetail.roles.length > 0
-                    ? userDetail.roles[0].name
-                    : '未分配角色'
-                }}
-              </span>
+              <div class="role-tags">
+                <template v-if="userDetail.roles && userDetail.roles.length > 0">
+                  <el-tag
+                    v-for="role in userDetail.roles"
+                    :key="role.id"
+                    size="small"
+                    type="success"
+                    class="role-tag"
+                  >
+                    {{ role.name }}
+                  </el-tag>
+                </template>
+                <template v-else>
+                  <span>未分配角色</span>
+                </template>
+              </div>
             </div>
             <div>
               <i class="iconfont-sys">&#xe736;</i>
@@ -33,14 +61,14 @@
             </div>
           </div>
 
-          <div class="lables">
+          <!-- <div class="lables">
             <h3>标签</h3>
             <div>
               <div v-for="item in lableList" :key="item">
                 {{ item }}
               </div>
             </div>
-          </div>
+          </div> -->
         </div>
 
         <!-- <el-carousel class="gallery" height="160px"
@@ -115,6 +143,15 @@
             </el-form-item>
 
             <div class="el-form-item-right">
+              <el-button
+                v-if="isEdit"
+                type="default"
+                style="width: 90px; margin-right: 10px"
+                v-ripple
+                @click="cancelEdit"
+              >
+                取消
+              </el-button>
               <el-button type="primary" style="width: 90px" v-ripple @click="edit">
                 {{ isEdit ? '保存' : '编辑' }}
               </el-button>
@@ -191,6 +228,15 @@
             </el-form-item>
 
             <div class="el-form-item-right">
+              <el-button
+                v-if="isEditPwd"
+                type="default"
+                style="width: 90px; margin-right: 10px"
+                v-ripple
+                @click="cancelEditPwd"
+              >
+                取消
+              </el-button>
               <el-button type="primary" style="width: 90px" v-ripple @click="editPwd">
                 {{ isEditPwd ? '保存' : '编辑' }}
               </el-button>
@@ -208,11 +254,12 @@
   import { UserService } from '@/api/usersApi'
   import { UserDetailResponse } from '@/api/model/userModel'
   import { ElMessage, ElMessageBox } from 'element-plus'
-  import { View as ElIconView, Hide as ElIconHide } from '@element-plus/icons-vue'
+  import { View as ElIconView, Hide as ElIconHide, Upload } from '@element-plus/icons-vue'
+  import { UploadService } from '@/api/uploadApi'
 
   const userStore = useUserStore()
   const userInfo = computed(() => userStore.getUserInfo)
-  const userDetail = ref<UserDetailResponse>({} as UserDetailResponse)
+  const userDetail = ref<UserDetailResponse & { originalIcon?: string }>({} as UserDetailResponse)
   const loading = ref(false)
 
   const isEdit = ref(false)
@@ -304,7 +351,21 @@
     ]
   })
 
-  const lableList: Array<string> = ['专注设计', '很有想法', '辣~', '大长腿', '川妹子', '海纳百川']
+  // 备份表单数据，用于取消编辑时恢复
+  const formBackup = ref({
+    loginName: '',
+    nickName: '',
+    email: '',
+    tel: '',
+    location: '',
+    des: ''
+  })
+
+  // 选择的头像文件
+  const selectedAvatar = ref<File | null>(null)
+
+  // 添加头像预览URL变量
+  const avatarPreviewUrl = ref<string>('')
 
   onMounted(async () => {
     getDate()
@@ -426,6 +487,61 @@
     }
   }
 
+  // 处理头像上传
+  const handleAvatarChange = (file: any) => {
+    if (file.raw) {
+      // 验证文件大小和类型
+      const isImage = file.raw.type.startsWith('image/')
+      const isLt2M = file.raw.size / 1024 / 1024 < 2
+
+      if (!isImage) {
+        ElMessage.error('只能上传图片文件!')
+        return
+      }
+      if (!isLt2M) {
+        ElMessage.error('图片大小不能超过 2MB!')
+        return
+      }
+
+      selectedAvatar.value = file.raw
+
+      // 释放之前的URL
+      if (avatarPreviewUrl.value) {
+        URL.revokeObjectURL(avatarPreviewUrl.value)
+      }
+
+      // 生成新的预览URL
+      avatarPreviewUrl.value = URL.createObjectURL(file.raw)
+      console.log('生成预览URL:', avatarPreviewUrl.value)
+    }
+  }
+
+  // 取消编辑基本信息
+  const cancelEdit = () => {
+    // 恢复表单数据
+    Object.assign(form, formBackup.value)
+
+    // 清除预览头像
+    if (avatarPreviewUrl.value) {
+      URL.revokeObjectURL(avatarPreviewUrl.value)
+      avatarPreviewUrl.value = ''
+    }
+
+    // 重置头像文件
+    selectedAvatar.value = null
+
+    // 退出编辑模式
+    isEdit.value = false
+  }
+
+  // 取消编辑密码
+  const cancelEditPwd = () => {
+    // 重置密码表单
+    resetPwdForm()
+    // 退出编辑模式
+    isEditPwd.value = false
+  }
+
   const edit = async () => {
     if (isEdit.value) {
       // 保存编辑内容
@@ -437,7 +553,7 @@
               const email = form.email && form.email.includes('*') ? '' : form.email
               const tel = form.tel && form.tel.includes('*') ? '' : form.tel
 
-              const params = {
+              const params: any = {
                 nickName: form.nickName,
                 email: email,
                 tel: tel,
@@ -445,11 +561,38 @@
                 location: form.location
               }
 
+              // 如果选择了新头像，上传头像
+              if (selectedAvatar.value) {
+                try {
+                  // 构建FormData对象
+                  const uploadFormData = new FormData()
+                  uploadFormData.append('test', selectedAvatar.value)
+
+                  // 调用上传API
+                  const uploadRes = await UploadService.upload(uploadFormData)
+
+                  if (uploadRes.success) {
+                    // 上传成功，将返回的URL添加到用户更新参数中
+                    params.icon = uploadRes.data.url
+                    ElMessage.success('头像上传成功')
+                  } else {
+                    ElMessage.error(uploadRes.message || '头像上传失败')
+                    return
+                  }
+                } catch (error) {
+                  console.error('头像上传失败:', error)
+                  ElMessage.error('头像上传失败')
+                  return
+                }
+              }
+
+              // 更新用户信息
               const res = await UserService.updateCurrentUserInfo(params)
               if (res.success) {
                 ElMessage.success('更新成功')
                 await fetchUserDetail() // 重新获取用户信息
                 isEdit.value = false
+                selectedAvatar.value = null
               } else {
                 ElMessage.error(res.message || '更新失败')
               }
@@ -463,6 +606,11 @@
     } else {
       // 编辑模式：先获取用户详细信息（包括敏感信息）
       if (userDetail.value.id) {
+        // 备份当前表单数据，用于取消时恢复
+        formBackup.value = { ...form }
+        // 备份原始头像
+        userDetail.value.originalIcon = userDetail.value.icon
+
         await fetchDetailForEdit(userDetail.value.id)
       } else {
         ElMessage.error('无法获取用户ID，请刷新页面后重试')
@@ -612,15 +760,32 @@
             object-fit: cover;
           }
 
-          .avatar {
+          .avatar-container {
             position: relative;
             z-index: 10;
-            width: 80px;
-            height: 80px;
+            display: inline-block;
             margin-top: 120px;
-            object-fit: cover;
-            border: 2px solid #fff;
-            border-radius: 50%;
+
+            .avatar {
+              position: relative;
+              z-index: 10;
+              width: 80px;
+              height: 80px;
+              object-fit: cover;
+              border: 2px solid #fff;
+              border-radius: 50%;
+            }
+
+            .avatar-upload-btn {
+              position: absolute;
+              right: -5px;
+              bottom: -5px;
+              z-index: 11;
+
+              .el-button {
+                box-shadow: 0 2px 5px rgb(0 0 0 / 20%);
+              }
+            }
           }
 
           .name {
@@ -641,11 +806,30 @@
             text-align: left;
 
             > div {
+              display: flex;
+              align-items: flex-start;
               margin-top: 10px;
+
+              i {
+                margin-top: 2px; // 微调图标垂直对齐
+              }
 
               span {
                 margin-left: 8px;
                 font-size: 14px;
+              }
+
+              .role-tags {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                margin-left: 8px;
+
+                .role-tag {
+                  margin-bottom: 4px;
+                  transform: scale(0.9);
+                  transform-origin: left;
+                }
               }
             }
           }

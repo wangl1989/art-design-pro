@@ -1,7 +1,7 @@
 <template>
   <div class="login register">
     <div class="left-wrap">
-      <left-view></left-view>
+      <LoginLeftView></LoginLeftView>
     </div>
     <div class="right-wrap">
       <div class="header">
@@ -51,7 +51,6 @@
 
 <script setup lang="ts">
   import AppConfig from '@/config'
-  import LeftView from '@/components/Pages/Login/LeftView.vue'
   import { ElMessage } from 'element-plus'
   import type { FormInstance, FormRules } from 'element-plus'
   import { RegisterService } from '@/api/registerApi'

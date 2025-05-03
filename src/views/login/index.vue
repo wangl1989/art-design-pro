@@ -1,7 +1,7 @@
 <template>
   <div class="login">
     <div class="left-wrap">
-      <left-view></left-view>
+      <LoginLeftView></LoginLeftView>
     </div>
     <div class="right-wrap">
       <div class="top-right-wrap">
@@ -49,14 +49,12 @@
             <el-form-item prop="username">
               <el-input
                 :placeholder="$t('login.placeholder[0]')"
-                size="large"
                 v-model.trim="formData.username"
               />
             </el-form-item>
             <el-form-item prop="password">
               <el-input
                 :placeholder="$t('login.placeholder[1]')"
-                size="large"
                 v-model.trim="formData.password"
                 type="password"
                 radius="8px"
@@ -74,8 +72,7 @@
             </el-form-item>
             <div class="drag-verify">
               <div class="drag-verify-content" :class="{ error: !isPassing && isClickPass }">
-                <!-- :background="isDark ? '#181818' : '#eee'" -->
-                <DragVerify
+                <ArtDragVerify
                   ref="dragVerify"
                   v-model:value="isPassing"
                   :width="width < 500 ? 328 : 438"
@@ -103,7 +100,6 @@
             <div style="margin-top: 30px">
               <el-button
                 class="login-btn"
-                size="large"
                 type="primary"
                 @click="handleSubmit"
                 :loading="loading"
@@ -127,7 +123,6 @@
 </template>
 
 <script setup lang="ts">
-  import LeftView from '@/components/Pages/Login/LeftView.vue'
   import AppConfig from '@/config'
   import { ElMessage, ElNotification } from 'element-plus'
   import { useUserStore } from '@/store/modules/user'
@@ -147,6 +142,11 @@
   import type { FormInstance, FormRules } from 'element-plus'
   import { onMounted } from 'vue'
   import FingerprintJS from '@fingerprintjs/fingerprintjs' // 导入 FingerprintJS
+
+  const settingStore = useSettingStore()
+  const { isDark, systemThemeType } = storeToRefs(settingStore)
+
+  const dragVerify = ref()
 
   const userStore = useUserStore()
   const router = useRouter()
@@ -171,9 +171,6 @@
   const captchaSrc = ref('')
   const loading = ref(false)
   const { width } = useWindowSize()
-
-  const store = useSettingStore()
-  const isDark = computed(() => store.isDark)
 
   const onPass = () => {}
 
@@ -217,6 +214,7 @@
           } else {
             ElMessage.error(res.message || '登录失败')
             refreshCaptcha()
+            resetDragVerify()
           }
         } catch (error) {
           console.error('Login error:', error)
@@ -227,6 +225,11 @@
         }
       }
     })
+  }
+
+  // 重置拖拽验证
+  const resetDragVerify = () => {
+    dragVerify.value.reset()
   }
 
   // 获取用户详情并完成登录流程
@@ -304,7 +307,7 @@
 
   const toggleTheme = () => {
     let { LIGHT, DARK } = SystemThemeEnum
-    useTheme().switchThemeStyles(useSettingStore().systemThemeType === LIGHT ? DARK : LIGHT)
+    useTheme().switchThemeStyles(systemThemeType.value === LIGHT ? DARK : LIGHT)
   }
 
   // 获取验证码

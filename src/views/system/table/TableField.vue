@@ -1,14 +1,15 @@
 <template>
   <el-dialog
-    v-model="dialogVisible"
-    :title="`表格字段管理 - ${tableInfo.tableName}`"
+    :model-value="props.visible"
     width="90%"
     :append-to-body="true"
-    :destroy-on-close="false"
+    :destroy-on-close="true"
     fullscreen
     @closed="handleClose"
+    @update:model-value="(val) => emit('update:visible', val)"
+    class="table-field-dialog"
   >
-    <div class="page-content">
+    <div class="table-field-content">
       <div class="header-info-card">
         <div class="header-info">
           <div class="info-item">
@@ -28,103 +29,58 @@
         </div>
       </div>
 
-      <table-bar
-        ref="tableBarRef"
-        :showTop="false"
+      <!-- 搜索栏 -->
+      <ArtSearchBar
+        v-model:filter="formFilters"
+        :items="formItems"
+        @reset="handleReset"
         @search="search"
-        @reset="resetQuery"
-        @changeColumn="changeColumn"
-        :columns="columns"
-      >
-        <template #top>
-          <el-form
-            :model="queryParams"
-            ref="searchFormRef"
-            inline
-            label-width="80px"
-            class="compact-form"
-          >
-            <el-row :gutter="0">
-              <el-col :span="18">
-                <el-form-item label="字段名称:">
-                  <el-input
-                    v-model="queryParams.columnName"
-                    placeholder="请输入字段名称搜索"
-                    style="width: 260px"
-                  ></el-input>
-                </el-form-item>
-              </el-col>
-              <el-col :span="6" class="search-buttons">
-                <el-button type="primary" @click="search" v-ripple>搜索</el-button>
-                <el-button @click="resetQuery" v-ripple>重置</el-button>
-              </el-col>
-            </el-row>
-          </el-form>
-        </template>
-        <template #search-buttons>
-          <!-- 这里故意留空，按钮已经移到表单内部 -->
-        </template>
-        <template #bottom>
-          <el-button type="primary" @click="handleAdd" v-auth="'field_add'" v-ripple
-            >新增字段</el-button
-          >
-          <el-button type="danger" @click="handleBatchDelete" v-auth="'field_batch_delete'" v-ripple
-            >批量删除</el-button
-          >
-        </template>
-      </table-bar>
+      />
 
-      <art-table
-        :data="fieldList"
-        selection
-        v-loading="loading"
-        pagination
-        :currentPage="pagination.current"
-        :pageSize="pagination.size"
-        :total="pagination.total"
-        @current-change="handleCurrentChange"
-        @size-change="handleSizeChange"
-        @selection-change="handleSelectionChange"
-      >
-        <el-table-column
-          label="字段名称"
-          prop="columnName"
-          min-width="150"
-          v-if="columns[0].show"
-        />
-        <el-table-column label="字段长度" prop="length" min-width="100" v-if="columns[1].show" />
-        <el-table-column label="字段类型" prop="type" min-width="120" v-if="columns[2].show" />
-        <el-table-column
-          label="不允许为空"
-          prop="isNullable"
-          min-width="120"
-          v-if="columns[3].show"
+      <ElCard shadow="never" class="art-table-card">
+        <!-- 表格头部 -->
+        <ArtTableHeader
+          :columnList="columnOptions"
+          v-model:columns="columnChecks"
+          @refresh="loadFieldList"
         >
-          <template #default="scope">
-            <el-tag :type="scope.row.isNullable ? 'success' : 'danger'">
-              {{ scope.row.isNullable ? '是' : '否' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="字段注释" prop="comment" min-width="180" v-if="columns[4].show" />
-        <el-table-column label="操作" fixed="right" width="180" v-if="columns[5].show">
-          <template #default="scope">
-            <el-button type="primary" link v-auth="'field_edit'" @click="handleEdit(scope.row)">
-              编辑
-            </el-button>
-            <el-button
+          <template #left>
+            <ElButton type="primary" @click="handleAdd" v-auth="'field_add'" v-ripple>
+              新增字段
+            </ElButton>
+            <ElButton
               type="danger"
-              link
+              @click="handleBatchDelete"
+              :disabled="selectedFields.length === 0"
               v-auth="'field_batch_delete'"
-              @click="handleDelete(scope.row)"
+              v-ripple
             >
-              删除
-            </el-button>
+              批量删除
+            </ElButton>
           </template>
-        </el-table-column>
-      </art-table>
+        </ArtTableHeader>
 
-      <!-- 添加/编辑对话框 -->
+        <!-- 表格 -->
+        <ArtTable
+          :data="fieldList"
+          selection
+          v-loading="loading"
+          :currentPage="formFilters.page"
+          :pageSize="formFilters.limit"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+          @selection-change="handleSelectionChange"
+          height="100%"
+          :marginTop="10"
+        >
+          <template #default>
+            <ElTableColumn v-for="col in columns" :key="col.prop || col.type" v-bind="col" />
+          </template>
+        </ArtTable>
+      </ElCard>
+
+      <!-- 添加/编辑字段对话框 (保持内部结构不变) -->
       <el-dialog
         v-model="fieldDialogVisible"
         :title="dialogType === 'add' ? '新增字段' : '编辑字段'"
@@ -168,11 +124,12 @@
               v-model="formData.length"
               placeholder="请输入长度"
               style="width: 100%"
-              :min="1"
+              :min="0"
               :disabled="!needLength(formData.type)"
+              controls-position="right"
             />
           </el-form-item>
-          <el-form-item label="不允许为空" prop="isNullable">
+          <el-form-item label="不是 null" prop="isNullable">
             <el-switch
               v-model="formData.isNullable"
               :active-value="true"
@@ -198,8 +155,23 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, watch, defineProps, defineEmits } from 'vue'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ref, reactive, watch, defineProps, defineEmits, h, nextTick, onMounted } from 'vue'
+  import {
+    ElMessage,
+    ElMessageBox,
+    ElDialog, // 需要显式导入使用的 Element Plus 组件
+    ElTag,
+    ElButton,
+    ElCard,
+    ElForm,
+    ElFormItem,
+    ElInput,
+    ElSelect,
+    ElOption,
+    ElInputNumber,
+    ElSwitch,
+    ElSpace
+  } from 'element-plus'
   import { TableService } from '@/api/tableApi'
   import {
     TableFieldRecordModel,
@@ -208,11 +180,9 @@
     EditTableFieldParam
   } from '@/api/model/tableModel'
   import type { FormInstance, FormRules } from 'element-plus'
-
-  // 表格栏引用
-  const tableBarRef = ref()
-  // 搜索表单引用
-  const searchFormRef = ref<FormInstance>()
+  import ArtButtonTable from '@/components/core/forms/ArtButtonTable.vue' // 需要导入
+  import { useCheckedColumns, ColumnOption } from '@/composables/useCheckedColumns'
+  import type { SearchFormItem } from '@/types/search-form' // 确认路径
 
   // 定义属性
   const props = defineProps({
@@ -237,19 +207,19 @@
   // 定义事件
   const emit = defineEmits(['update:visible'])
 
-  // 对话框可见状态
-  const dialogVisible = ref(false)
+  // 对话框可见状态 (主对话框)
+  // const dialogVisible = ref(false); // 移除内部状态
 
-  // 表信息
+  // 表信息 (从 props 获取，保持响应式更新)
   const tableInfo = reactive({
-    tableName: '',
-    schemaName: '',
-    tableType: 1
+    tableName: props.tableName,
+    schemaName: props.schemaName,
+    tableType: props.tableType
   })
 
   // 加载状态
   const loading = ref(false)
-  const submitLoading = ref(false)
+  const submitLoading = ref(false) // 提交字段表单的加载状态
 
   // 字段数据列表
   const fieldList = ref<TableFieldRecordModel[]>([])
@@ -257,78 +227,126 @@
   // 选中的字段记录
   const selectedFields = ref<TableFieldRecordModel[]>([])
 
-  // 列配置
-  const columns = reactive([
-    { name: '字段名称', show: true },
-    { name: '字段长度', show: true },
-    { name: '字段类型', show: true },
-    { name: '允许为空', show: true },
-    { name: '字段注释', show: true },
-    { name: '操作', show: true }
-  ])
-
-  // 查询参数
-  const queryParams = reactive<TableFieldListParam>({
+  // 搜索表单初始值
+  const initialSearchState = {
     page: 1,
     limit: 10,
-    schemaName: '',
-    tableName: '',
-    tableType: 1,
     columnName: ''
+  }
+
+  // 响应式搜索表单数据 (包含来自 props 的固定参数)
+  const formFilters = reactive<TableFieldListParam>({
+    ...initialSearchState,
+    schemaName: props.schemaName,
+    tableName: props.tableName,
+    tableType: props.tableType
   })
 
-  // 分页信息
+  // 分页信息 (仅需 total)
   const pagination = reactive({
-    current: 1,
-    size: 10,
     total: 0
   })
 
-  // 对话框相关
+  // 搜索栏配置
+  const formItems: SearchFormItem[] = [
+    {
+      label: '字段名称',
+      prop: 'columnName',
+      type: 'input',
+      config: {
+        placeholder: '请输入字段名称搜索',
+        clearable: true
+      }
+    }
+  ]
+
+  // 表格列配置
+  const columnOptions: ColumnOption[] = [
+    { label: '勾选', type: 'selection', width: 55 },
+    { prop: 'columnName', label: '字段名称', minWidth: 150 },
+    { prop: 'length', label: '字段长度', minWidth: 100 },
+    { prop: 'type', label: '字段类型', minWidth: 120 },
+    {
+      prop: 'isNullable',
+      label: '不是 null', // 注意：规则是 isNullable，显示文本反过来
+      minWidth: 120,
+      formatter: (row) =>
+        h(
+          ElTag,
+          { type: !row.isNullable ? 'success' : 'danger' }, // API 返回 true 表示允许为空，false 表示不允许
+          () => (!row.isNullable ? '否' : '是')
+        )
+    },
+    { prop: 'comment', label: '字段注释', minWidth: 180 },
+    {
+      prop: 'actions',
+      label: '操作',
+      fixed: 'right',
+      width: 180,
+      formatter: (row) =>
+        h(ElSpace, null, () => [
+          h(ArtButtonTable, {
+            type: 'edit',
+            auth: 'field_edit',
+            onClick: () => handleEdit(row)
+          }),
+          h(ArtButtonTable, {
+            type: 'delete',
+            auth: 'field_batch_delete', // 注意：权限标识可能需要区分单行删除和批量删除
+            onClick: () => handleDelete(row)
+          })
+        ])
+    }
+  ]
+
+  // 使用 Hook 获取响应式的列配置和选中状态
+  const { columns, columnChecks } = useCheckedColumns(() => columnOptions)
+
+  // 添加/编辑字段对话框相关
   const fieldDialogVisible = ref(false)
   const dialogType = ref<'add' | 'edit'>('add')
-  const formRef = ref<FormInstance>()
+  const formRef = ref<FormInstance>() // 这是内层表单的 ref
 
-  // 表单数据
-  const formData = reactive<AddTableFieldParam & { oldName?: string }>({
-    schemaName: '',
-    tableName: '',
-    tableType: 1,
+  // 内层表单数据的初始默认值
+  const defaultFormData = {
     columnName: '',
     length: 50,
     type: 'varchar',
     isNullable: false,
-    comment: ''
-  })
-
-  // 初始化表信息 - 在watch前定义这个函数
-  const initTableInfo = () => {
-    // 从props中获取表信息
-    tableInfo.tableName = props.tableName
-    tableInfo.schemaName = props.schemaName
-    tableInfo.tableType = props.tableType
-
-    // 设置查询参数
-    queryParams.tableName = tableInfo.tableName
-    queryParams.schemaName = tableInfo.schemaName
-    queryParams.tableType = tableInfo.tableType
-
-    // 加载字段列表
-    loadFieldList()
+    comment: '',
+    oldName: ''
   }
+
+  // 内层表单数据
+  const formData = reactive<AddTableFieldParam & { oldName?: string }>({
+    schemaName: props.schemaName,
+    tableName: props.tableName,
+    tableType: props.tableType,
+    ...defaultFormData
+  })
 
   // 加载字段列表数据
   const loadFieldList = async () => {
+    if (!tableInfo.tableName || !tableInfo.schemaName) {
+      console.error('表名或数据库名为空，无法加载字段列表')
+      return
+    }
+
     loading.value = true
     try {
-      const res = await TableService.getFieldList(queryParams)
+      // 使用 formFilters (已包含 schema, table 等信息)
+      const res = await TableService.getFieldList({
+        ...formFilters,
+        tableName: tableInfo.tableName, // 确保使用最新的tableInfo值
+        schemaName: tableInfo.schemaName,
+        tableType: tableInfo.tableType
+      })
       if (res.success) {
         fieldList.value = res.data.records
         pagination.total = res.data.total
-        pagination.current = res.data.current
-        pagination.size = res.data.size
       } else {
         ElMessage.error(res.message || '获取字段列表失败')
+        console.error('字段列表加载失败:', res.message)
       }
     } catch (error) {
       console.error('获取字段列表失败:', error)
@@ -338,27 +356,50 @@
     }
   }
 
-  // 监听父组件传递的visible属性
+  // 监听父组件传递的 props 更新
   watch(
     () => props.visible,
     (newVal) => {
-      dialogVisible.value = newVal
       if (newVal) {
-        initTableInfo()
+        // 当对话框打开时，更新 tableInfo 和 formFilters 并加载数据
+        tableInfo.tableName = props.tableName
+        tableInfo.schemaName = props.schemaName
+        tableInfo.tableType = props.tableType
+
+        formFilters.tableName = props.tableName
+        formFilters.schemaName = props.schemaName
+        formFilters.tableType = props.tableType
+        // 重置搜索条件和分页
+        formFilters.columnName = initialSearchState.columnName
+        formFilters.page = initialSearchState.page
+        formFilters.limit = initialSearchState.limit
+
+        // 确保有表名和数据库名再加载数据
+        if (formFilters.tableName && formFilters.schemaName) {
+          loadFieldList()
+        } else {
+          console.error('表名或数据库名为空，无法加载字段列表')
+        }
       }
     },
-    { immediate: true }
+    { immediate: true } // 添加immediate，确保组件创建时触发一次
   )
 
-  // 监听对话框关闭，通知父组件更新visible
-  watch(
-    () => dialogVisible.value,
-    (newVal) => {
-      if (!newVal) {
-        emit('update:visible', false)
-      }
+  // 组件挂载时初始化
+  onMounted(() => {
+    // 如果visible为true且有表名和数据库名，则加载数据
+    if (props.visible && props.tableName && props.schemaName) {
+      tableInfo.tableName = props.tableName
+      tableInfo.schemaName = props.schemaName
+      tableInfo.tableType = props.tableType
+
+      formFilters.tableName = props.tableName
+      formFilters.schemaName = props.schemaName
+      formFilters.tableType = props.tableType
+
+      loadFieldList()
     }
-  )
+  })
 
   // 是否需要长度字段
   const needLength = (type: string): boolean => {
@@ -366,7 +407,7 @@
     return ['varchar', 'int', 'bigint', 'tinyint', 'decimal', 'double'].includes(lowerType)
   }
 
-  // 表单验证规则
+  // 内层表单验证规则
   const formRules = reactive<FormRules>({
     columnName: [
       { required: true, message: '请输入字段名称', trigger: 'blur' },
@@ -376,7 +417,7 @@
     length: [
       {
         validator: (rule, value, callback) => {
-          if (needLength(formData.type) && (!value || value <= 0)) {
+          if (needLength(formData.type) && (value === null || value === undefined || value < 0)) {
             callback(new Error('请输入有效的字段长度'))
           } else {
             callback()
@@ -389,21 +430,17 @@
 
   // 搜索
   const search = () => {
-    queryParams.page = 1 // 搜索时重置为第一页
+    formFilters.page = 1 // 搜索时重置为第一页
     loadFieldList()
   }
 
   // 重置查询
-  const resetQuery = () => {
-    queryParams.columnName = ''
-    queryParams.page = 1
-    queryParams.limit = 10
+  const handleReset = () => {
+    // 只重置搜索字段和分页，保持 schema/table 信息
+    formFilters.columnName = initialSearchState.columnName
+    formFilters.page = initialSearchState.page
+    formFilters.limit = initialSearchState.limit
     loadFieldList()
-  }
-
-  // 列显示设置
-  const changeColumn = (list: any) => {
-    Object.assign(columns, list)
   }
 
   // 监听选中行变化
@@ -413,64 +450,71 @@
 
   // 处理分页变化
   const handleCurrentChange = (page: number) => {
-    queryParams.page = page
+    formFilters.page = page
     loadFieldList()
   }
 
   // 处理每页显示数量变化
   const handleSizeChange = (size: number) => {
-    queryParams.limit = size
-    queryParams.page = 1 // 切换每页数量时重置为第一页
+    formFilters.limit = size
+    formFilters.page = 1 // 切换每页数量时重置为第一页
     loadFieldList()
+  }
+
+  // 重置内层表单 (尝试使用 resetFields)
+  const resetInnerForm = () => {
+    console.log('开始重置表单数据')
+    // 先手动重置表单数据到初始状态
+    Object.keys(defaultFormData).forEach((key) => {
+      // @ts-expect-error：动态key访问
+      formData[key] = defaultFormData[key]
+    })
+
+    console.log('重置后的表单数据:', formData)
+
+    // 然后再使用resetFields清除校验状态
+    nextTick(() => {
+      if (formRef.value) {
+        formRef.value.clearValidate()
+        // 确保 schema/table 信息正确 (从 tableInfo 获取最新值)
+        formData.schemaName = tableInfo.schemaName
+        formData.tableName = tableInfo.tableName
+        formData.tableType = tableInfo.tableType
+      }
+    })
   }
 
   // 处理添加字段
   const handleAdd = () => {
     dialogType.value = 'add'
-    resetForm()
-    // 设置默认值
-    formData.schemaName = tableInfo.schemaName
-    formData.tableName = tableInfo.tableName
-    formData.tableType = tableInfo.tableType
-
+    // 先重置数据，再打开弹窗
+    resetInnerForm()
     fieldDialogVisible.value = true
   }
 
   // 处理编辑字段
   const handleEdit = (row: TableFieldRecordModel) => {
     dialogType.value = 'edit'
-    resetForm()
-
-    // 复制数据到表单
-    formData.schemaName = tableInfo.schemaName
-    formData.tableName = tableInfo.tableName
-    formData.tableType = tableInfo.tableType
-    formData.columnName = row.columnName
-    formData.oldName = row.columnName // 保存旧字段名
-    formData.length = row.length
-    formData.type = row.type
-    formData.isNullable = row.isNullable
-    formData.comment = row.comment
-
     fieldDialogVisible.value = true
+
+    nextTick(() => {
+      if (formRef.value) {
+        formRef.value.clearValidate() // 编辑时只清除校验
+      }
+      // 填充数据
+      formData.schemaName = tableInfo.schemaName
+      formData.tableName = tableInfo.tableName
+      formData.tableType = tableInfo.tableType
+      formData.columnName = row.columnName
+      formData.oldName = row.columnName // 保存旧字段名
+      formData.length = row.length
+      formData.type = row.type
+      formData.isNullable = row.isNullable
+      formData.comment = row.comment
+    })
   }
 
-  // 重置表单
-  const resetForm = () => {
-    formData.columnName = ''
-    formData.oldName = ''
-    formData.length = 50
-    formData.type = 'varchar'
-    formData.isNullable = false
-    formData.comment = ''
-
-    // 重置表单验证
-    if (formRef.value) {
-      formRef.value.resetFields()
-    }
-  }
-
-  // 提交表单
+  // 提交内层表单
   const submitForm = async () => {
     if (!formRef.value) return
 
@@ -480,20 +524,23 @@
         try {
           let res
 
+          // 确保提交时 schema/table/type 是最新的
+          const submitData = {
+            ...formData,
+            schemaName: tableInfo.schemaName,
+            tableName: tableInfo.tableName,
+            tableType: tableInfo.tableType
+          }
+
           if (dialogType.value === 'add') {
-            res = await TableService.addField(formData)
+            // AddTableFieldParam 不需要 oldName，直接传递 submitData
+            // 类型断言确保 submitData 符合 AddTableFieldParam (假设它符合)
+            res = await TableService.addField(submitData as AddTableFieldParam)
           } else {
             // 编辑字段
             const editParams: EditTableFieldParam = {
-              schemaName: formData.schemaName,
-              tableName: formData.tableName,
-              tableType: formData.tableType,
-              columnName: formData.columnName,
-              length: formData.length,
-              type: formData.type,
-              isNullable: formData.isNullable,
-              comment: formData.comment,
-              oldName: formData.oldName || ''
+              ...submitData,
+              oldName: formData.oldName || submitData.columnName // 确保 oldName 有值
             }
             res = await TableService.editField(editParams)
           }
@@ -528,30 +575,38 @@
       type: 'warning'
     })
       .then(async () => {
+        loading.value = true // 开始 loading
         const deletePromises = selectedFields.value.map((field) =>
           TableService.deleteField({
             tableName: tableInfo.tableName,
             fieldName: field.columnName
+            // 根据API定义，不需要schemaName参数
           })
         )
 
         try {
-          const results = await Promise.all(deletePromises)
-          const success = results.every((res) => res.success)
+          const results = await Promise.allSettled(deletePromises)
+          const failedCount = results.filter(
+            (r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)
+          ).length
 
-          if (success) {
+          if (failedCount === 0) {
             ElMessage.success('批量删除成功')
-            loadFieldList() // 重新加载数据
           } else {
-            ElMessage.error('部分或全部删除失败，请重试')
+            ElMessage.warning(
+              `批量删除完成，${selectedFields.value.length - failedCount} 个成功，${failedCount} 个失败。`
+            )
           }
+          loadFieldList() // 重新加载数据
         } catch (error) {
-          console.error('批量删除字段失败:', error)
-          ElMessage.error('批量删除字段时发生错误')
+          console.error('批量删除字段过程中发生错误:', error)
+          ElMessage.error('批量删除字段时发生未知错误')
+        } finally {
+          loading.value = false // 结束 loading
         }
       })
       .catch(() => {
-        // 用户取消操作
+        ElMessage.info('取消了批量删除操作') // 添加 .catch 处理
       })
   }
 
@@ -567,6 +622,7 @@
           const res = await TableService.deleteField({
             tableName: tableInfo.tableName,
             fieldName: row.columnName
+            // 根据API定义，不需要schemaName参数
           })
           if (res.success) {
             ElMessage.success('删除成功')
@@ -580,7 +636,7 @@
         }
       })
       .catch(() => {
-        // 用户取消操作
+        ElMessage.info('取消了删除操作') // 添加 .catch 处理
       })
   }
 
@@ -601,46 +657,36 @@
 </script>
 
 <style lang="scss" scoped>
-  .page-content {
-    width: 100%;
-    height: 100%;
+  /* 使 Dialog 内容区域可滚动 */
+  .table-field-dialog {
+    :deep(.el-dialog__body) {
+      height: calc(100% - 54px); // 减去 header 高度，可能需要微调
+      padding: 0; // 移除默认 padding，由内部控制
+      overflow: hidden; // 防止 body 滚动
+    }
   }
 
-  .search-buttons {
+  .table-field-content {
     display: flex;
-    align-items: center;
-    height: 32px;
-    margin-top: 4px;
-
-    .el-button {
-      margin-right: 10px;
-
-      &:last-child {
-        margin-right: 0;
-      }
-    }
-  }
-
-  .compact-form {
-    .el-form-item {
-      margin-right: 0;
-      margin-bottom: 18px;
-    }
+    flex-direction: column;
+    height: 100%;
+    padding: 20px; // 内部内容区域的 padding
+    overflow-y: auto; // 内容本身可滚动
   }
 
   .header-info-card {
-    padding: 20px;
-    margin-bottom: 20px;
-    background: linear-gradient(to right, #f8f9fa, #fff);
+    padding: 15px 20px; // 调整 padding
+    margin-bottom: 15px; // 调整 margin
+    background: #f8f9fa; // 简化背景
     border-left: 4px solid #4c84ff;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px 0 rgb(0 0 0 / 5%);
+    border-radius: 4px; // 减小圆角
+    // box-shadow: 0 1px 4px 0 rgb(0 0 0 / 5%); // 减淡阴影
   }
 
   .header-info {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 15px 25px; // 调整间距
     font-size: 14px;
 
     .info-item {
@@ -648,17 +694,32 @@
       align-items: center;
 
       .info-label {
-        margin-right: 10px;
-        font-weight: 500;
+        margin-right: 8px; // 调整间距
         color: #606266;
       }
 
       .info-value {
         display: inline-flex;
         align-items: center;
-        font-weight: bold;
+        font-weight: 500; // 调整字重
         color: #303133;
       }
+    }
+  }
+
+  .art-table-card {
+    display: flex;
+    flex: 1; // 让卡片占据剩余空间
+    flex-direction: column;
+    margin-top: 15px; // 与搜索栏间距
+    overflow: hidden; // 防止内容溢出卡片
+
+    :deep(.el-card__body) {
+      display: flex;
+      flex-direction: column;
+      height: 100%; // 让 card body 也撑满
+      padding: 15px; // 可以根据需要调整内边距
+      overflow: hidden; // 防止内部溢出
     }
   }
 </style>

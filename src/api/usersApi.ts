@@ -57,7 +57,6 @@ export class UserService {
 
   // 获取用户详情
   static getUserDetail(userId: number) {
-    console.log('API调用getUserDetail, userId:', userId)
     return request.get<BaseResult<UserDetailResponse>>({
       url: '/api/admin/user/detail',
       params: { id: userId }

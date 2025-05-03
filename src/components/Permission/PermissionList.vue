@@ -286,6 +286,11 @@
           margin-right: 5px;
           font-size: 16px;
         }
+
+        .iconfont-sys {
+          margin-right: 10px;
+          font-size: 16px;
+        }
       }
     }
 

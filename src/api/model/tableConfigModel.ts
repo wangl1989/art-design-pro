@@ -125,6 +125,19 @@ export interface SyncTableFieldListParams {
 }
 
 /**
+ * 字段配置列表请求参数
+ */
+export interface TableFieldConfigListParams {
+  tableConfigId: number // 表格配置ID
+  columnName?: string // 字段名称
+  businessName?: string // 业务名称
+  formComponentType?: string // 表单组件类型
+  isQueryField?: boolean // 是否作为查询参数
+  page?: number // 页码
+  limit?: number // 每页条数
+}
+
+/**
  * 编辑字段配置请求参数
  */
 export interface EditTableFieldConfigParams {

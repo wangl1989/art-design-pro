@@ -9,6 +9,7 @@ import {
   SimpleTableField,
   TableFieldConfigModel,
   SyncTableFieldListParams,
+  TableFieldConfigListParams,
   getSimpleTableFieldParam
 } from './model/tableConfigModel'
 
@@ -51,6 +52,13 @@ export class TableService {
     })
   }
 
+  // 彻底删除表格配置
+  static completelyDeleteTableConfig(id: number) {
+    return request.del<BaseResult>({
+      url: `/api/admin/tableConfig/completelyDelete?id=${id}`
+    })
+  }
+
   // 获取表名列表
   // params: 数据库名称
   static getTableNameList(params: { schemaName: string }) {
@@ -76,9 +84,9 @@ export class TableService {
   }
 
   // 根据表单配置获取字段集合
-  static getFieldListByTableConfigId(params: { tableConfigId: number }) {
-    return request.get<BaseResult<TableFieldConfigModel[]>>({
-      url: '/api/admin/tableFieldConfig/getFieldsByTableConfigId',
+  static getTableFieldConfigList(params: TableFieldConfigListParams) {
+    return request.get<PageResult<TableFieldConfigModel>>({
+      url: '/api/admin/tableFieldConfig/list',
       params
     })
   }

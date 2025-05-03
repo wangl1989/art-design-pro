@@ -1,210 +1,139 @@
 <template>
-  <div class="page-content">
-    <!-- 由于目前Dict.vue已经被修改为直接使用div+搜索表单的方式，
-    我们需要改回使用修改后的TableBar组件 -->
-    <table-bar
-      ref="tableBarRef"
-      :showTop="false"
-      @search="search"
-      @reset="resetQuery"
-      @changeColumn="changeColumn"
-      :columns="columns"
-    >
-      <template #top>
-        <el-form
-          :model="queryParams"
-          ref="searchFormRef"
-          inline
-          label-width="80px"
-          class="compact-form"
+  <ArtTableFullScreen>
+    <div class="dict-page" id="table-full-screen">
+      <!-- 搜索栏 -->
+      <ArtSearchBar
+        v-model:filter="formFilters"
+        :items="formItems"
+        @reset="handleReset"
+        @search="search"
+        auth="dict_search"
+        :isExpand="true"
+      ></ArtSearchBar>
+
+      <ElCard shadow="never" class="art-table-card">
+        <!-- 表格头部 -->
+        <ArtTableHeader
+          :columnList="columnOptions"
+          v-model:columns="columnChecks"
+          @refresh="loadDictList"
         >
-          <el-row :gutter="0">
-            <el-col :span="6">
-              <el-form-item label="字典类型:">
-                <el-input
-                  v-model="queryParams.type"
-                  placeholder="请输入字典类型搜索"
-                  style="width: 180px"
-                ></el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="标签名:">
-                <el-input
-                  v-model="queryParams.label"
-                  placeholder="请输入标签名搜索"
-                  style="width: 180px"
-                ></el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="数据值:">
-                <el-input
-                  v-model="queryParams.value"
-                  placeholder="请输入数据值搜索"
-                  style="width: 180px"
-                ></el-input>
-              </el-form-item>
-            </el-col>
-            <!-- 搜索按钮列 -->
-            <el-col :span="6" class="search-buttons">
-              <el-button type="primary" @click="search" v-ripple>搜索</el-button>
-              <el-button @click="resetQuery" v-ripple>重置</el-button>
-            </el-col>
-          </el-row>
-        </el-form>
-      </template>
-      <!-- 使用新的 search-buttons 插槽 -->
-      <template #search-buttons>
-        <!-- 这里故意留空，按钮已经移到表单内部 -->
-      </template>
-      <template #bottom>
-        <el-button type="primary" @click="handleAdd" v-auth="'dict_add'" v-ripple
-          >新增字典</el-button
+          <template #left>
+            <el-button type="primary" @click="handleAdd" v-auth="'dict_add'" v-ripple
+              >新增字典</el-button
+            >
+          </template>
+        </ArtTableHeader>
+
+        <!-- 表格 -->
+        <ArtTable
+          :data="dictList"
+          v-loading="loading"
+          :currentPage="formFilters.page"
+          :pageSize="formFilters.limit"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+          :marginTop="10"
+          height="100%"
         >
-      </template>
-    </table-bar>
+          <template #default>
+            <ElTableColumn v-for="col in columns" :key="col.prop || col.type" v-bind="col" />
+          </template>
+        </ArtTable>
 
-    <art-table
-      :data="dictList"
-      v-loading="loading"
-      pagination
-      :currentPage="pagination.current"
-      :pageSize="pagination.size"
-      :total="pagination.total"
-      @current-change="handleCurrentChange"
-      @size-change="handleSizeChange"
-    >
-      <el-table-column label="字典类型" prop="type" v-if="columns[0].show" />
-      <el-table-column label="标签名" prop="label" v-if="columns[1].show" />
-      <el-table-column label="数据值" prop="value" v-if="columns[2].show" />
-      <el-table-column label="描述" prop="description" v-if="columns[3].show" />
-      <el-table-column label="排序" prop="sort" sortable v-if="columns[4].show" />
-      <el-table-column label="创建时间" prop="createDate" sortable v-if="columns[5].show" />
-      <el-table-column label="更新时间" prop="updateDate" sortable v-if="columns[6].show" />
-      <el-table-column label="操作" fixed="right" width="280" v-if="columns[7].show">
-        <template #default="scope">
-          <el-button
-            size="small"
-            type="primary"
-            v-auth="'dict_edit'"
-            link
-            @click="handleEdit(scope.row)"
+        <!-- 添加/编辑字典对话框 -->
+        <ElDialog
+          v-model="dialogVisible"
+          :title="isEdit ? '编辑字典' : '新增字典'"
+          width="500px"
+          destroy-on-close
+        >
+          <el-form
+            ref="dictFormRef"
+            :model="formData"
+            :rules="rules"
+            label-width="100px"
+            class="dict-form"
           >
-            编辑
-          </el-button>
-          <el-button
-            size="small"
-            type="success"
-            v-auth="'dict_type_add'"
-            link
-            @click="handleAddByType(scope.row)"
-          >
-            添加该类型字典
-          </el-button>
-          <el-button
-            size="small"
-            type="warning"
-            v-auth="'dict_edit_type'"
-            link
-            @click="handleEditType(scope.row)"
-          >
-            编辑类型
-          </el-button>
-          <el-button
-            size="small"
-            type="danger"
-            v-auth="'dict_delete'"
-            link
-            @click="handleDelete(scope.row)"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </art-table>
+            <el-form-item label="字典类型" prop="type">
+              <el-input
+                v-model="formData.type"
+                placeholder="请输入字典类型"
+                :disabled="typeDisabled"
+              ></el-input>
+            </el-form-item>
+            <el-form-item label="标签名" prop="label">
+              <el-input v-model="formData.label" placeholder="请输入标签名"></el-input>
+            </el-form-item>
+            <el-form-item label="数据值" prop="value">
+              <el-input v-model="formData.value" placeholder="请输入数据值"></el-input>
+            </el-form-item>
+            <el-form-item label="描述" prop="description">
+              <el-input
+                type="textarea"
+                v-model="formData.description"
+                placeholder="请输入描述"
+                :rows="3"
+              ></el-input>
+            </el-form-item>
+            <el-form-item label="排序" prop="sort">
+              <el-input-number
+                v-model="formData.sort"
+                :min="0"
+                :max="999"
+                controls-position="right"
+              />
+            </el-form-item>
+          </el-form>
 
-    <!-- 添加/编辑字典对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="isEdit ? '编辑字典' : '新增字典'"
-      width="500px"
-      destroy-on-close
-    >
-      <el-form
-        ref="dictFormRef"
-        :model="formData"
-        :rules="rules"
-        label-width="100px"
-        class="dict-form"
-      >
-        <el-form-item label="字典类型" prop="type">
-          <el-input
-            v-model="formData.type"
-            placeholder="请输入字典类型"
-            :disabled="typeDisabled"
-          ></el-input>
-        </el-form-item>
-        <el-form-item label="标签名" prop="label">
-          <el-input v-model="formData.label" placeholder="请输入标签名"></el-input>
-        </el-form-item>
-        <el-form-item label="数据值" prop="value">
-          <el-input v-model="formData.value" placeholder="请输入数据值"></el-input>
-        </el-form-item>
-        <el-form-item label="描述" prop="description">
-          <el-input
-            type="textarea"
-            v-model="formData.description"
-            placeholder="请输入描述"
-            :rows="3"
-          ></el-input>
-        </el-form-item>
-        <el-form-item label="排序" prop="sort">
-          <el-input-number v-model="formData.sort" :min="0" :max="999" controls-position="right" />
-        </el-form-item>
-      </el-form>
+          <template #footer>
+            <div class="dialog-footer">
+              <el-button @click="dialogVisible = false">取消</el-button>
+              <el-button type="primary" @click="submitForm" :loading="submitLoading"
+                >确定</el-button
+              >
+            </div>
+          </template>
+        </ElDialog>
 
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitForm" :loading="submitLoading">确定</el-button>
-        </div>
-      </template>
-    </el-dialog>
-
-    <!-- 编辑字典类型对话框 -->
-    <el-dialog v-model="typeDialogVisible" title="编辑字典类型" width="500px" destroy-on-close>
-      <el-form
-        ref="typeFormRef"
-        :model="typeFormData"
-        :rules="typeRules"
-        label-width="100px"
-        class="dict-form"
-      >
-        <el-form-item label="原字典类型" prop="oldType">
-          <el-input v-model="typeFormData.oldType" disabled></el-input>
-        </el-form-item>
-        <el-form-item label="新字典类型" prop="newType">
-          <el-input v-model="typeFormData.newType" placeholder="请输入新的字典类型"></el-input>
-        </el-form-item>
-      </el-form>
-
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="typeDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitTypeForm" :loading="submitLoading"
-            >确定</el-button
+        <!-- 编辑字典类型对话框 -->
+        <ElDialog v-model="typeDialogVisible" title="编辑字典类型" width="500px" destroy-on-close>
+          <el-form
+            ref="typeFormRef"
+            :model="typeFormData"
+            :rules="typeRules"
+            label-width="100px"
+            class="dict-form"
           >
-        </div>
-      </template>
-    </el-dialog>
-  </div>
+            <el-form-item label="原字典类型" prop="oldType">
+              <el-input v-model="typeFormData.oldType" disabled></el-input>
+            </el-form-item>
+            <el-form-item label="新字典类型" prop="newType">
+              <el-input v-model="typeFormData.newType" placeholder="请输入新的字典类型"></el-input>
+            </el-form-item>
+          </el-form>
+
+          <template #footer>
+            <div class="dialog-footer">
+              <el-button @click="typeDialogVisible = false">取消</el-button>
+              <el-button type="primary" @click="submitTypeForm" :loading="submitLoading"
+                >确定</el-button
+              >
+            </div>
+          </template>
+        </ElDialog>
+      </ElCard>
+    </div>
+  </ArtTableFullScreen>
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, onMounted } from 'vue'
-  import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
+  import { ref, reactive, onMounted, h } from 'vue'
+  import { ElMessage, ElMessageBox, FormInstance, FormRules, ElButton, ElSpace } from 'element-plus'
   import { DictService } from '@/api/dictApi'
+  import { useCheckedColumns, type ColumnOption } from '@/composables/useCheckedColumns'
+  import ArtButtonTable from '@/components/core/forms/ArtButtonTable.vue'
   import {
     DictRecord,
     DictListParams,
@@ -212,46 +141,105 @@
     EditDictParams,
     EditDictTypeParams
   } from '@/api/model/dictModel'
+  import { SearchFormItem } from '@/types/search-form'
 
   // 加载状态
   const loading = ref(false)
 
-  // TableBar 引用
-  const tableBarRef = ref()
-
   // 字典数据列表
   const dictList = ref<DictRecord[]>([])
 
-  // 列配置
-  const columns = reactive([
-    { name: '字典类型', show: true },
-    { name: '标签名', show: true },
-    { name: '数据值', show: true },
-    { name: '描述', show: true },
-    { name: '排序', show: false },
-    { name: '创建时间', show: false },
-    { name: '更新时间', show: false },
-    { name: '操作', show: true }
-  ])
-
-  // 查询参数
-  const queryParams = reactive<DictListParams>({
-    page: 1,
-    limit: 10,
+  // 定义表单搜索初始值
+  const initialSearchState = {
     type: '',
     value: '',
     label: '',
-    description: '',
-    sortByCreateDateAsc: false,
-    sortBySortAsc: true
-  })
+    page: 1,
+    limit: 10
+  }
+
+  // 统一搜索和分页状态
+  const formFilters = reactive({ ...initialSearchState })
+
+  // 搜索栏配置 (Aligned with Account.vue structure)
+  const formItems: SearchFormItem[] = [
+    {
+      label: '字典类型',
+      prop: 'type',
+      type: 'input',
+      config: {
+        placeholder: '请输入字典类型搜索',
+        clearable: true
+      }
+    },
+    {
+      label: '标签名',
+      prop: 'label',
+      type: 'input',
+      config: {
+        placeholder: '请输入标签名搜索',
+        clearable: true
+      }
+    },
+    {
+      label: '数据值',
+      prop: 'value',
+      type: 'input',
+      config: {
+        placeholder: '请输入数据值搜索',
+        clearable: true
+      }
+    }
+  ]
+
+  // 列定义 (Moved definition outside, added formatter inline)
+  const columnOptions: ColumnOption[] = [
+    { prop: 'type', label: '字典类型' },
+    { prop: 'label', label: '标签名' },
+    { prop: 'value', label: '数据值' },
+    { prop: 'description', label: '描述' },
+    { prop: 'sort', label: '排序', sortable: true, checked: false },
+    { prop: 'createDate', label: '创建时间', sortable: true, checked: false },
+    { prop: 'updateDate', label: '更新时间', sortable: true, checked: false },
+    {
+      prop: 'actions',
+      label: '操作',
+      fixed: 'right',
+      width: 280,
+      formatter: (row: DictRecord) =>
+        h(ElSpace, null, () => [
+          h(ArtButtonTable, {
+            type: 'edit',
+            auth: 'dict_edit',
+            onClick: () => handleEdit(row)
+          }),
+          h(ArtButtonTable, {
+            icon: '&#xe623;',
+            iconColor: '#67C23A',
+            auth: 'dict_type_add',
+            onClick: () => handleAddByType(row)
+          }),
+          h(ArtButtonTable, {
+            icon: '&#xe720;',
+            iconColor: '#E6A23C',
+            auth: 'dict_edit_type',
+            onClick: () => handleEditType(row)
+          }),
+          h(ArtButtonTable, {
+            type: 'delete',
+            auth: 'dict_delete',
+            onClick: () => handleDelete(row)
+          })
+        ])
+    }
+  ]
+
+  // 列定义与动态显隐 (Pass a function returning columnOptions)
+  const { columns, columnChecks } = useCheckedColumns(() => columnOptions)
 
   // 分页信息
   const pagination = reactive({
-    current: 1,
-    size: 10,
-    total: 0,
-    pages: 0
+    total: 0
   })
 
   // 对话框控制
@@ -294,13 +282,16 @@
   const loadDictList = async () => {
     loading.value = true
     try {
-      const res = await DictService.getDictList(queryParams)
+      const params: DictListParams = {
+        ...formFilters,
+        sortByCreateDateAsc: false,
+        sortBySortAsc: true
+      }
+
+      const res = await DictService.getDictList(params)
       if (res.success) {
         dictList.value = res.data.records
         pagination.total = res.data.total
-        pagination.current = res.data.current
-        pagination.size = res.data.size
-        pagination.pages = res.data.pages
       } else {
         ElMessage.error(res.message || '获取字典列表失败')
       }
@@ -314,41 +305,26 @@
 
   // 搜索
   const search = () => {
-    queryParams.page = 1 // 搜索时重置为第一页
+    formFilters.page = 1
     loadDictList()
   }
 
   // 重置查询
-  const resetQuery = () => {
-    queryParams.type = ''
-    queryParams.value = ''
-    queryParams.label = ''
-    queryParams.description = ''
-    queryParams.page = 1
-    queryParams.limit = 10
-    queryParams.sortByCreateDateAsc = false
-    queryParams.sortBySortAsc = true
+  const handleReset = () => {
+    Object.assign(formFilters, initialSearchState)
     loadDictList()
-  }
-
-  // 列显示设置 - 调整参数顺序回 (show, index)
-  const changeColumn = (show: any, index: number) => {
-    // 确保 columns[index] 存在
-    if (columns[index]) {
-      columns[index].show = show
-    }
   }
 
   // 处理分页变化
   const handleCurrentChange = (page: number) => {
-    queryParams.page = page
+    formFilters.page = page
     loadDictList()
   }
 
   // 处理每页显示数量变化
   const handleSizeChange = (size: number) => {
-    queryParams.limit = size
-    queryParams.page = 1 // 切换每页数量时重置为第一页
+    formFilters.limit = size
+    formFilters.page = 1
     loadDictList()
   }
 
@@ -358,7 +334,6 @@
     dialogVisible.value = true
     typeDisabled.value = false
 
-    // 重置表单数据
     Object.assign(formData, {
       id: undefined,
       type: '',
@@ -367,6 +342,7 @@
       description: '',
       sort: 0
     })
+    dictFormRef.value?.resetFields()
   }
 
   // 处理根据类型添加字典
@@ -375,7 +351,6 @@
     dialogVisible.value = true
     typeDisabled.value = true
 
-    // 重置表单数据，但保留类型
     Object.assign(formData, {
       id: undefined,
       type: row.type,
@@ -384,6 +359,8 @@
       description: '',
       sort: 0
     })
+    dictFormRef.value?.resetFields()
+    formData.type = row.type || ''
   }
 
   // 处理编辑字典
@@ -392,7 +369,6 @@
     dialogVisible.value = true
     typeDisabled.value = true
 
-    // 填充表单数据
     Object.assign(formData, {
       id: row.id,
       type: row.type || '',
@@ -401,15 +377,23 @@
       description: row.description || '',
       sort: row.sort || 0
     })
+    dictFormRef.value?.resetFields()
+    formData.id = row.id
+    formData.type = row.type || ''
+    formData.label = row.label || ''
+    formData.value = row.value || ''
+    formData.description = row.description || ''
+    formData.sort = row.sort || 0
   }
 
   // 处理编辑字典类型
   const handleEditType = (row: DictRecord) => {
     typeDialogVisible.value = true
 
-    // 填充表单数据
     typeFormData.oldType = row.type || ''
     typeFormData.newType = ''
+    typeFormRef.value?.resetFields()
+    typeFormData.oldType = row.type || ''
   }
 
   // 处理删除字典
@@ -424,7 +408,7 @@
           const res = await DictService.deleteDict(row.id)
           if (res.success) {
             ElMessage.success('删除成功')
-            loadDictList() // 重新加载数据
+            loadDictList()
           } else {
             ElMessage.error(res.message || '删除失败')
           }
@@ -434,7 +418,7 @@
         }
       })
       .catch(() => {
-        // 用户取消删除，不做处理
+        ElMessage.info('已取消删除')
       })
   }
 
@@ -452,7 +436,7 @@
           if (res.success) {
             ElMessage.success('字典类型更新成功')
             typeDialogVisible.value = false
-            loadDictList() // 重新加载数据
+            loadDictList()
           } else {
             ElMessage.error(res.message || '操作失败')
           }
@@ -487,7 +471,6 @@
               description: formData.description,
               sort: formData.sort
             }
-
             res = await DictService.updateDict(params)
           } else {
             // 新增
@@ -498,14 +481,13 @@
               description: formData.description,
               sort: formData.sort
             }
-
             res = await DictService.addDict(params)
           }
 
           if (res.success) {
             ElMessage.success(isEdit.value ? '编辑成功' : '新增成功')
             dialogVisible.value = false
-            loadDictList() // 重新加载数据
+            loadDictList()
           } else {
             ElMessage.error(res.message || '操作失败')
           }
@@ -526,33 +508,6 @@
 </script>
 
 <style lang="scss" scoped>
-  .page-content {
-    width: 100%;
-    height: 100%;
-  }
-
-  .search-buttons {
-    display: flex;
-    align-items: center;
-    height: 32px;
-    margin-top: 4px;
-
-    .el-button {
-      margin-right: 10px;
-
-      &:last-child {
-        margin-right: 0;
-      }
-    }
-  }
-
-  .compact-form {
-    .el-form-item {
-      margin-right: 0;
-      margin-bottom: 18px;
-    }
-  }
-
   .dict-form {
     .el-input-number {
       width: 100%;

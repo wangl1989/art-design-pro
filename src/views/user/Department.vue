@@ -1,7 +1,7 @@
 <template>
   <div class="page-content">
     <el-row :gutter="12">
-      <el-col :xs="24" :sm="12" :lg="8">
+      <el-col :xs="24" :sm="12" :lg="6">
         <el-input placeholder="部门名称"></el-input>
       </el-col>
       <el-col :xs="24" :sm="12" :lg="8" class="el-col2">
@@ -25,8 +25,8 @@
         </el-table-column>
         <el-table-column fixed="right" label="操作" width="150px">
           <template #default="scope">
-            <button-table type="edit" @click="showDialog('edit', scope.row)" />
-            <button-table type="delete" @click="deleteDepartment" />
+            <ArtButtonTable type="edit" @click="showDialog('edit', scope.row)" />
+            <ArtButtonTable type="delete" @click="deleteDepartment" />
           </template>
         </el-table-column>
       </template>

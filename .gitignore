@@ -6,3 +6,4 @@ dist-ssr
 .cursorrules
 *.mdc
 .history
+*.ini

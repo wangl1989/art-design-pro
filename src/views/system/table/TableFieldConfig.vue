@@ -18,6 +18,7 @@
             :items="formItems"
             @reset="handleReset"
             @search="handleSearch"
+            :isExpand="true"
           ></ArtSearchBar>
 
           <ElCard shadow="never" class="art-table-card">

@@ -565,7 +565,7 @@
   const isMainMenuAdd = ref(false)
 
   const showDialog = (type: string, row: any) => {
-    showModel(type, row, false)
+    showModel('menu', row, false)
   }
 
   const handleChange = () => {}

@@ -93,31 +93,6 @@
             </div>
           </template>
         </ElDialog>
-
-        <!-- 权限分配对话框 -->
-        <ElDialog v-model="permissionDialog" :title="'分配用户权限'" width="30%" destroy-on-close>
-          <div :style="{ maxHeight: '500px', overflowY: 'scroll' }" v-loading="permissionLoading">
-            <permission-tree
-              ref="permissionTreeRef"
-              :menu-list="menuList"
-              :checked-keys="selectedPermissionIds"
-              :allow-menu-selection="false"
-              @check="handlePermissionCheck"
-            />
-          </div>
-          <template #footer>
-            <div class="dialog-footer">
-              <el-button @click="permissionDialog = false">取消</el-button>
-              <el-button
-                type="primary"
-                @click="saveUserPermissions"
-                :loading="savePermissionLoading"
-              >
-                保存权限
-              </el-button>
-            </div>
-          </template>
-        </ElDialog>
       </ElCard>
     </div>
   </ArtTableFullScreen>
@@ -128,17 +103,18 @@
   import { ElDialog, FormInstance, ElTag } from 'element-plus'
   import type { FormRules } from 'element-plus'
   import { UserService } from '@/api/usersApi'
-  import { UserRecord, AssignUserPermissionParams, UserListParams } from '@/api/model/userModel'
+  import { UserRecord, UserListParams } from '@/api/model/userModel'
   import { RoleService } from '@/api/roleApi'
   import { Role } from '@/api/model/roleModel'
   import { ApiStatus } from '@/utils/http/status'
   import { formatDate } from '@/utils/date'
   import { onMounted } from 'vue'
-  import { useMenuStore } from '@/store/modules/menu'
-  import PermissionTree from '@/components/Permission/PermissionTree.vue'
+  import { useRouter } from 'vue-router'
   import { SearchChangeParams, SearchFormItem } from '@/types/search-form'
   import ArtButtonTable from '@/components/core/forms/ArtButtonTable.vue'
   import { useCheckedColumns } from '@/composables/useCheckedColumns'
+
+  const router = useRouter()
 
   const dialogType = ref('add')
   const dialogVisible = ref(false)
@@ -149,6 +125,18 @@
   // 表单项变更处理
   const handleFormChange = (params: SearchChangeParams): void => {
     console.log('表单项变更:', params)
+  }
+
+  // 导航到权限分配页面
+  const navigateToPermissionPage = (row: UserRecord) => {
+    router.push({
+      path: '/system/menu/menuPermission',
+      query: {
+        userId: row.id.toString(),
+        userName: row.nickName,
+        type: 'user'
+      }
+    })
   }
 
   // 表单配置项
@@ -348,7 +336,7 @@
           h(ArtButtonTable, {
             type: 'more',
             auth: 'user_assign',
-            onClick: () => showPermissionDialog(row)
+            onClick: () => navigateToPermissionPage(row)
           })
         ])
       }
@@ -601,89 +589,6 @@
     })
   }
 
-  // 权限树相关
-  const permissionDialog = ref(false)
-  const permissionLoading = ref(false)
-  const savePermissionLoading = ref(false)
-  const permissionTreeRef = ref()
-  const { menuList } = storeToRefs(useMenuStore())
-  const selectedPermissionIds = ref<string[]>([])
-  const currentUserId = ref<number>(0)
-
-  // 打开权限分配对话框
-  const showPermissionDialog = async (row: UserRecord) => {
-    permissionDialog.value = true
-    currentUserId.value = row.id
-
-    // 加载用户已分配的权限ID
-    await loadUserPermissions(row.id)
-  }
-
-  // 加载用户已分配的权限
-  const loadUserPermissions = async (userId: number) => {
-    permissionLoading.value = true
-    try {
-      const response = await UserService.getAssignedPermissionIds(userId)
-      if (response.success) {
-        // 获取权限ID并转换为树组件需要的格式（添加p_前缀）
-        const permIds = response.data || []
-        selectedPermissionIds.value = permIds.map((id) => `p_${id}`)
-      } else {
-        ElMessage.warning(response.message || '获取用户权限失败')
-      }
-    } catch (error) {
-      console.error('获取用户权限失败:', error)
-      ElMessage.error('获取用户权限失败，请重试')
-    } finally {
-      permissionLoading.value = false
-    }
-  }
-
-  // 处理权限树节点选择事件
-  const handlePermissionCheck = () => {
-    // 在这里可以添加逻辑，如果检测到菜单节点被选中，可以发出警告或阻止选择
-  }
-
-  // 保存用户权限设置
-  const saveUserPermissions = async () => {
-    if (!currentUserId.value) {
-      ElMessage.warning('请先选择一个用户')
-      return
-    }
-
-    savePermissionLoading.value = true
-    try {
-      // 获取当前选中的所有权限节点ID
-      const { checkedKeys } = permissionTreeRef.value?.getCheckedKeys() || { checkedKeys: [] }
-
-      // 从选中的节点中过滤出权限节点（以p_开头的ID）并去除前缀
-      const permissionIds = checkedKeys
-        .filter((key: string) => typeof key === 'string' && key.startsWith('p_'))
-        .map((key: string) => parseInt(key.substring(2)))
-        .filter((id: number) => !isNaN(id))
-
-      // 调用保存API
-      const params: AssignUserPermissionParams = {
-        userId: currentUserId.value,
-        permissionIds: permissionIds
-      }
-
-      const response = await UserService.assignUserPermission(params)
-      if (response.success) {
-        ElMessage.success('用户权限分配成功')
-        permissionDialog.value = false
-      } else {
-        ElMessage.error(response.message || '保存失败')
-      }
-    } catch (error) {
-      console.error('保存用户权限失败:', error)
-      ElMessage.error('保存用户权限失败，请重试')
-    } finally {
-      savePermissionLoading.value = false
-    }
-  }
-
-  // 组件挂载时加载数据
   onMounted(() => {
     loadUserData()
   })

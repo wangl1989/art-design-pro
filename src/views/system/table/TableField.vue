@@ -35,6 +35,7 @@
         :items="formItems"
         @reset="handleReset"
         @search="search"
+        :isExpand="true"
       />
 
       <ElCard shadow="never" class="art-table-card">

@@ -19,6 +19,7 @@ import { RoutesAlias } from './modules/routesAlias'
 import { setWorktab } from '@/utils/worktab'
 import { registerAsyncRoutes } from './modules/dynamicRoutes'
 import { formatMenuTitle } from '@/utils/menu'
+import { analytics } from '@/utils/analytics'
 
 /** 顶部进度条配置 */
 NProgress.configure({
@@ -290,9 +291,24 @@ export const setPageTitle = (to: RouteLocationNormalized): void => {
   }
 }
 
+// 存储当前页面的清理函数
+let currentPageCleanup: (() => void) | null = null
+
 /** 路由全局后置守卫 */
-router.afterEach(() => {
+router.afterEach(async (to, from) => {
   if (useSettingStore().showNprogress) NProgress.done()
+  // 如果存在上一个页面的清理函数，先调用它
+  if (currentPageCleanup) {
+    currentPageCleanup()
+    currentPageCleanup = null
+  }
+
+  // 跟踪新页面并保存清理函数
+  try {
+    currentPageCleanup = await analytics.trackPageView(to, from)
+  } catch (error) {
+    console.error('页面跟踪错误:', error)
+  }
 })
 
 /**

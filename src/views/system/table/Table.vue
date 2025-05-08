@@ -32,6 +32,7 @@
               新增表格
             </ElButton>
             <ElButton
+              title="批量删除表格"
               type="danger"
               @click="handleBatchDelete"
               :disabled="selectedTables.length === 0"
@@ -228,8 +229,18 @@
           </template>
         </el-form>
         <template #footer>
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitForm" :loading="submitLoading">确定</el-button>
+          <el-button
+            :title="dialogType === 'add' ? '取消新增表格' : '取消编辑表格'"
+            @click="dialogVisible = false"
+            >取消</el-button
+          >
+          <el-button
+            :title="dialogType === 'add' ? '保存新增表格' : '保存编辑表格'"
+            type="primary"
+            @click="submitForm"
+            :loading="submitLoading"
+            >确定</el-button
+          >
         </template>
       </ElDialog>
 
@@ -380,17 +391,20 @@
       formatter: (row) =>
         h(ElSpace, null, () => [
           h(ArtButtonTable, {
+            title: '编辑表格',
             type: 'edit',
             auth: 'table_edit', // 传递权限标识
             onClick: () => handleEdit(row)
           }),
           h(ArtButtonTable, {
+            title: '管理字段列表',
             iconColor: '#14f326',
             icon: '&#xe67b;', // 使用 Element Plus 图标名称或 SVG
             auth: 'field_manage',
             onClick: () => handleManageFields(row)
           }),
           h(ArtButtonTable, {
+            title: '删除表格',
             type: 'delete',
             auth: 'table_delete',
             onClick: () => handleDelete(row)

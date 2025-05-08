@@ -6,7 +6,9 @@
       </el-col>
       <div style="width: 12px"></div>
       <el-col :xs="24" :sm="12" :lg="6" class="el-col2">
-        <el-button v-ripple @click="loadRoleData" v-auth="'role_search'">搜索</el-button>
+        <el-button title="搜索角色" v-ripple @click="loadRoleData" v-auth="'role_search'"
+          >搜索</el-button
+        >
         <el-button @click="showDialog('add')" v-auth="'role_add'" v-ripple>新增角色</el-button>
       </el-col>
     </el-row>
@@ -49,9 +51,20 @@
         </el-table-column>
         <el-table-column fixed="right" label="操作" width="250px">
           <template #default="scope">
-            <ArtButtonTable type="edit" auth="role_edit" @click="showDialog('edit', scope.row)" />
-            <ArtButtonTable type="delete" auth="role_delete" @click="deleteRole(scope.row.id)" />
             <ArtButtonTable
+              title="编辑角色"
+              type="edit"
+              auth="role_edit"
+              @click="showDialog('edit', scope.row)"
+            />
+            <ArtButtonTable
+              title="删除角色"
+              type="delete"
+              auth="role_delete"
+              @click="deleteRole(scope.row.id)"
+            />
+            <ArtButtonTable
+              title="给角色分配菜单权限"
               type="more"
               auth="role_assign"
               @click="navigateToPermissions(scope.row)"
@@ -82,8 +95,17 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit(formRef)">提交</el-button>
+          <el-button
+            :title="dialogType === 'add' ? '取消新增角色' : '取消编辑角色'"
+            @click="dialogVisible = false"
+            >取消</el-button
+          >
+          <el-button
+            :title="dialogType === 'add' ? '保存新增角色' : '保存编辑角色'"
+            type="primary"
+            @click="handleSubmit(formRef)"
+            >提交</el-button
+          >
         </div>
       </template>
     </el-dialog>

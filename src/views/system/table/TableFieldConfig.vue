@@ -523,6 +523,7 @@
         return h(
           'div',
           h(ArtButtonTable, {
+            title: '字段排序',
             icon: '&#xe840;',
             iconColor: '#88970e',
             extraClass: 'handle'
@@ -627,11 +628,13 @@
       formatter: (row) => {
         return h('div', [
           h(ArtButtonTable, {
+            title: '编辑配置字段',
             type: 'edit',
             auth: 'tableconfig_edit_field',
             onClick: () => handleEditField(row)
           }),
           h(ArtButtonTable, {
+            title: '删除配置字段',
             type: 'delete',
             auth: 'tableconfig_field_delete',
             onClick: () => handleDeleteField(row)

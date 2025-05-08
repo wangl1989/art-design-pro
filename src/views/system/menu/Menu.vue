@@ -27,7 +27,12 @@
               v-auth="'permission_manage'"
             >
               <!-- 权限按钮 -->
-              <el-button type="primary" link @click="toggleAuthList(scope.$index)">
+              <el-button
+                title="展示菜单权限"
+                type="primary"
+                link
+                @click="toggleAuthList(scope.$index)"
+              >
                 共 {{ scope.row.meta.authList.length }} 个权限
               </el-button>
 
@@ -60,9 +65,13 @@
 
         <el-table-column fixed="right" label="操作" width="180">
           <template #default="scope">
-            <ArtButtonTable type="add" @click="showModel('menu', null, false, scope.row)" />
-            <ArtButtonTable type="edit" @click="showDialog('edit', scope.row)" />
-            <ArtButtonTable type="delete" @click="deleteMenu(scope.row)" />
+            <ArtButtonTable
+              title="新增菜单或权限"
+              type="add"
+              @click="showModel('menu', null, false, scope.row)"
+            />
+            <ArtButtonTable title="编辑菜单" type="edit" @click="showDialog('edit', scope.row)" />
+            <ArtButtonTable title="删除菜单或权限" type="delete" @click="deleteMenu(scope.row)" />
           </template>
         </el-table-column>
       </template>

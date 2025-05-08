@@ -1,7 +1,7 @@
 <template>
   <div class="basic-list-card">
     <div class="art-card art-custom-card">
-      <div class="card-header">
+      <div class="card-header" style="padding-right: 0">
         <p class="card-title">{{ title }}</p>
         <p class="card-subtitle">{{ subtitle }}</p>
       </div>
@@ -27,7 +27,7 @@
 <script setup lang="ts">
   import { computed } from 'vue'
 
-  const itemHeight = 66
+  const itemHeight = 65
   const props = withDefaults(
     defineProps<{
       list: Activity[]

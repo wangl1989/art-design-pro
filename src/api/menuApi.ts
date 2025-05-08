@@ -16,7 +16,6 @@ import {
 
 // 菜单接口
 export const menuService = {
-  // 获取菜单列表，模拟网络请求
   async getMenuList(
     delay: number = 300
   ): Promise<{ menuList: MenuListType[]; closeLoading: () => void }> {

@@ -1,44 +1,55 @@
 <template>
   <div class="console">
-    <CardList></CardList>
+    <CardList :dataList="cardListData"></CardList>
 
     <div class="column column2">
-      <ActiveUser></ActiveUser>
+      <ActiveUser :chartData="activeUserChartData" :listData="activeUserListData"></ActiveUser>
       <SalesOverview></SalesOverview>
     </div>
 
     <div class="column column3">
-      <NewUser></NewUser>
-      <Dynamic></Dynamic>
-      <TodoList></TodoList>
-    </div>
-
-    <div class="bottom-wrap art-custom-card">
-      <div>
-        <h2 class="box-title">关于项目</h2>
-        <p>{{ systemName }} 是一款专注于用户体验和视觉设计的后台管理系统模版</p>
-        <p>使用了 Vue3、TypeScript、Vite、Element Plus 等前沿技术</p>
-
-        <div class="button-wrap">
-          <div class="btn art-custom-card" @click="goPage(WEB_LINKS.DOCS)">
-            <span>项目官网</span>
-            <i class="iconfont-sys">&#xe703;</i>
-          </div>
-          <div class="btn art-custom-card" @click="goPage(WEB_LINKS.INTRODUCE)">
-            <span>文档</span>
-            <i class="iconfont-sys">&#xe703;</i>
-          </div>
-          <div class="btn art-custom-card" @click="goPage(WEB_LINKS.GITHUB_HOME)">
-            <span>Github</span>
-            <i class="iconfont-sys">&#xe703;</i>
-          </div>
-          <div class="btn art-custom-card" @click="goPage(WEB_LINKS.BLOG)">
-            <span>博客</span>
-            <i class="iconfont-sys">&#xe703;</i>
-          </div>
-        </div>
+      <NewUser class="new-user-card"></NewUser>
+      <ArtDataListCard
+        :maxCount="5"
+        :list="activityListData"
+        title="最近活动"
+        subtitle="用户最新操作"
+        :showMoreButton="true"
+        @more="handleMore"
+        class="activity-card"
+      />
+      <div class="donut-charts">
+        <ArtDonutChartCard
+          :value="systemData.roleCount"
+          :title="'角色数'"
+          :percentage="systemData.rolePercent"
+          :height="9.6"
+          :data="[systemData.rolePercent, 100 - systemData.rolePercent]"
+          :radius="['50%', '70%']"
+          :color="['#409EFF', '#f5f7fa']"
+          class="donut-card"
+        />
+        <ArtDonutChartCard
+          :value="systemData.menuCount"
+          :title="'菜单数'"
+          :percentage="systemData.menuPercent"
+          :height="9.6"
+          :data="[systemData.menuPercent, 100 - systemData.menuPercent]"
+          :radius="['50%', '70%']"
+          :color="['#67C23A', '#f5f7fa']"
+          class="donut-card"
+        />
+        <ArtDonutChartCard
+          :value="systemData.permissionCount"
+          :title="'权限数'"
+          :percentage="systemData.permissionPercent"
+          :height="9.7"
+          :data="[systemData.permissionPercent, 100 - systemData.permissionPercent]"
+          :radius="['50%', '70%']"
+          :color="['#E6A23C', '#f5f7fa']"
+          class="donut-card"
+        />
       </div>
-      <img class="right-img" src="@imgs/draw/draw1.png" />
     </div>
   </div>
 </template>
@@ -48,33 +59,228 @@
   import ActiveUser from './widget/ActiveUser.vue'
   import SalesOverview from './widget/SalesOverview.vue'
   import NewUser from './widget/NewUser.vue'
-  import Dynamic from './widget/Dynamic.vue'
-  import AppConfig from '@/config'
-  import TodoList from './widget/TodoList.vue'
+  import ArtDataListCard from '@/components/core/cards/ArtDataListCard.vue'
+  import ArtDonutChartCard from '@/components/core/cards/ArtDonutChartCard.vue'
   import { useSettingStore } from '@/store/modules/setting'
-  import { WEB_LINKS } from '@/utils/links'
   import { useCommon } from '@/composables/useCommon'
+  import { computed, watch, ref, onMounted } from 'vue'
+  import { AnalyticsService } from '@/api/analyticsApi'
+  import {
+    IndexUserOperationLogResponse,
+    IndexSystemDataResponse
+  } from '@/api/model/analyticsModel'
+
+  const router = useRouter()
   const settingStore = useSettingStore()
   const currentGlopTheme = computed(() => settingStore.systemThemeType)
 
-  // 系统主题风格变化时，刷新页面重写渲染 Echarts
   watch(currentGlopTheme, () => {
     settingStore.reload()
   })
 
-  const systemName = AppConfig.systemInfo.name
   useCommon().scrollToTop()
 
-  const goPage = (url: string) => {
-    // 跳转到新页面
-    window.open(url)
+  const cardListData = ref([
+    { des: '总访问次数', icon: '&#xe721;', startVal: 0, duration: 1000, num: 0, change: '0%' },
+    { des: '独立访客数', icon: '&#xe724;', startVal: 0, duration: 1000, num: 0, change: '0%' },
+    { des: '点击量', icon: '&#xe7aa;', startVal: 0, duration: 1000, num: 0, change: '0%' },
+    { des: '新用户', icon: '&#xe82a;', startVal: 0, duration: 1000, num: 0, change: '0%' }
+  ])
+
+  interface ChartData {
+    dates: string[]
+    values: number[]
+  }
+  const activeUserChartData = ref<ChartData>({ dates: [], values: [] })
+  const activeUserListData = ref([
+    { name: '总用户量', num: '0' },
+    { name: '总访问量', num: '0' },
+    { name: '总点击量', num: '0' },
+    { name: '平均访问时长', num: '0S' }
+  ])
+
+  const loading = ref(false)
+
+  interface ActivityListItem {
+    title: string
+    status: string
+    time: string
+    class: string
+    icon: string
+  }
+  const activityListData = ref<ActivityListItem[]>([])
+
+  const systemData = ref<IndexSystemDataResponse>({
+    id: 0,
+    roleCount: 0,
+    menuCount: 0,
+    permissionCount: 0,
+    rolePercent: 0,
+    menuPercent: 0,
+    permissionPercent: 0
+  })
+
+  const fetchTodayStats = async () => {
+    try {
+      const data = await AnalyticsService.getTodayStats()
+      if (data.success) {
+        const statsData = data.data
+        cardListData.value = [
+          {
+            des: '总访问次数',
+            icon: '&#xe721;',
+            startVal: 0,
+            duration: 1000,
+            num: statsData.totalVisits,
+            change: formatPercentage(statsData.visitsPercent)
+          },
+          {
+            des: '独立访客数',
+            icon: '&#xe724;',
+            startVal: 0,
+            duration: 1000,
+            num: statsData.uniqueVisitors,
+            change: formatPercentage(statsData.visitorsPercent)
+          },
+          {
+            des: '点击量',
+            icon: '&#xe7aa;',
+            startVal: 0,
+            duration: 1000,
+            num: statsData.totalClicks,
+            change: formatPercentage(statsData.clickPercent)
+          },
+          {
+            des: '新用户',
+            icon: '&#xe82a;',
+            startVal: 0,
+            duration: 1000,
+            num: statsData.newUsers,
+            change: formatPercentage(statsData.newUserPercent)
+          }
+        ]
+        activeUserListData.value = [
+          { name: '总用户量', num: formatNumber(statsData.allTotalUser) },
+          { name: '总访问量', num: formatNumber(statsData.allTotalVisits) },
+          { name: '总点击量', num: formatNumber(statsData.allTotalClicks) },
+          { name: '平均访问时长', num: `${statsData.avgVisitDuration}S` }
+        ]
+      }
+    } catch (error) {
+      console.error('获取今日统计数据失败:', error)
+    }
+  }
+
+  const fetchTrendStats = async () => {
+    try {
+      const data = await AnalyticsService.getTrendStats(9)
+      if (data && data.success) {
+        const trendData = data.data
+        activeUserChartData.value = {
+          dates: trendData.days.map((day) => String(day)),
+          values: trendData.visits
+        }
+      }
+    } catch (error) {
+      console.error('获取趋势数据失败:', error)
+    }
+  }
+
+  const fetchActivityLog = async () => {
+    try {
+      const response = await AnalyticsService.getIndexUserOperationLog(5)
+      if (response.success && response.data) {
+        activityListData.value = response.data.map((log: IndexUserOperationLogResponse) => {
+          let icon = log.icon
+          let itemClass = ''
+
+          if (!icon) {
+            switch (log.method?.toUpperCase()) {
+              case 'POST':
+                icon = '&#xe6f2;'
+                itemClass = 'bg-primary'
+                break
+              case 'PUT':
+                icon = '&#xe806;'
+                itemClass = 'bg-secondary'
+                break
+              case 'DELETE':
+                icon = '&#xe813;'
+                itemClass = 'bg-danger'
+                break
+              default:
+                icon = '&#xe61e;'
+                itemClass = 'bg-info'
+            }
+          } else {
+            switch (log.method?.toUpperCase()) {
+              case 'POST':
+                itemClass = 'bg-primary'
+                break
+              case 'PUT':
+                itemClass = 'bg-secondary'
+                break
+              case 'DELETE':
+                itemClass = 'bg-danger'
+                break
+              default:
+                itemClass = 'bg-info'
+            }
+          }
+
+          return {
+            title: log.title,
+            status: log.userName,
+            time: log.createTime,
+            icon: icon || '',
+            class: itemClass
+          }
+        })
+      }
+    } catch (error) {
+      console.error('获取活动日志失败:', error)
+      activityListData.value = []
+    }
+  }
+
+  const fetchSystemData = async () => {
+    try {
+      const response = await AnalyticsService.getIndexSystemData()
+      if (response.success && response.data) {
+        systemData.value = response.data
+      }
+    } catch (error) {
+      console.error('获取系统数据失败:', error)
+    }
+  }
+
+  const formatPercentage = (value: number) => {
+    if (value > 0) {
+      return `+${value}%`
+    } else {
+      return `${value}%`
+    }
+  }
+  const formatNumber = (num: number) => {
+    if (num >= 1000) {
+      return `${Math.floor(num / 1000)}k`
+    }
+    return num.toString()
+  }
+
+  onMounted(async () => {
+    loading.value = true
+    await Promise.all([fetchTodayStats(), fetchTrendStats(), fetchActivityLog(), fetchSystemData()])
+    loading.value = false
+  })
+
+  const handleMore = () => {
+    router.push('/system/log/log')
   }
 </script>
 
 <style lang="scss" scoped>
   .console {
-    padding-bottom: 15px;
-
     :deep(.card-header) {
       display: flex;
       justify-content: space-between;
@@ -99,12 +305,10 @@
       }
     }
 
-    // 主标题
     :deep(.box-title) {
       color: var(--art-gray-900) !important;
     }
 
-    // 副标题
     :deep(.subtitle) {
       color: var(--art-gray-600) !important;
     }
@@ -122,6 +326,44 @@
       justify-content: space-between;
       margin-top: var(--console-margin);
       background-color: transparent !important;
+    }
+
+    .column3 {
+      .new-user-card {
+        width: 55%;
+      }
+
+      .activity-card {
+        width: 40%;
+        margin-left: 15px;
+      }
+
+      .donut-charts {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        width: calc(25% - 15px);
+        margin-left: 15px;
+
+        :deep(.art-donut-chart-card) {
+          height: auto;
+          padding: 10px 0;
+        }
+
+        .donut-card {
+          margin-bottom: 18px;
+          background: var(--art-main-bg-color);
+          border-radius: calc(var(--custom-radius) + 4px) !important;
+
+          &:first-child {
+            margin-top: 0;
+          }
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
+      }
     }
 
     .bottom-wrap {
@@ -177,7 +419,6 @@
   }
 </style>
 
-<!-- 移动端处理 -->
 <style lang="scss" scoped>
   .console {
     @media screen and (max-width: $device-ipad-pro) {
@@ -198,19 +439,18 @@
         flex-wrap: wrap;
         margin-top: 15px;
 
-        :deep(.new-user) {
-          width: 100%;
-          margin-top: 0;
+        .new-user-card {
+          width: 35%;
         }
 
-        :deep(.dynamic) {
-          flex: 1;
-          margin: 15px 0 0;
+        .activity-card {
+          width: 40%;
+          margin-left: 15px;
         }
 
-        :deep(.todo-list) {
-          flex: 1;
-          margin: 15px 0 0 15px;
+        .donut-charts {
+          width: calc(25% - 15px);
+          margin-left: 15px;
         }
       }
 
@@ -263,19 +503,32 @@
         display: block;
         margin-top: 15px;
 
-        :deep(.new-user) {
+        .new-user-card {
           width: 100%;
-          margin-top: 15px;
         }
 
-        :deep(.dynamic) {
+        .activity-card {
           width: 100%;
           margin: 15px 0 0;
+          margin-left: 0;
         }
 
-        :deep(.todo-list) {
+        .donut-charts {
+          display: flex;
+          flex-flow: row wrap;
           width: 100%;
           margin: 15px 0 0;
+          margin-left: 0;
+
+          .donut-card {
+            width: calc(33.33% - 10px);
+            margin-right: 15px;
+            margin-bottom: 0;
+
+            &:last-child {
+              margin-right: 0;
+            }
+          }
         }
       }
 
@@ -323,6 +576,22 @@
 
         :deep(.card-header) {
           padding: 0 0 0 5px !important;
+        }
+      }
+
+      .column3 {
+        .donut-charts {
+          flex-direction: column;
+
+          .donut-card {
+            width: 100%;
+            margin-right: 0;
+            margin-bottom: 15px;
+
+            &:last-child {
+              margin-bottom: 0;
+            }
+          }
         }
       }
 

@@ -18,6 +18,7 @@
         >
           <template #left>
             <el-button
+              title="批量删除Redis数据"
               type="danger"
               @click="handleBatchDelete"
               v-auth="'redis_batch_delete'"
@@ -27,7 +28,7 @@
             </el-button>
           </template>
           <template #right>
-            <el-form-item label="排序:" style=" margin-right: 16px;margin-bottom: 0">
+            <el-form-item label="排序:" style="margin-right: 16px; margin-bottom: 0">
               <el-switch
                 v-model="sortByExpireAsc"
                 @change="search"
@@ -183,6 +184,7 @@
       minWidth: 180,
       formatter: (row) =>
         h(ArtButtonTable, {
+          title: '查看Redis值',
           text: '查看值',
           icon: '&#xe745;',
           iconColor: '#409EFF',
@@ -197,6 +199,7 @@
       width: 120,
       formatter: (row) =>
         h(ArtButtonTable, {
+          title: '删除Redis数据',
           type: 'delete',
           auth: 'redis_delete',
           onClick: () => handleDelete(row)

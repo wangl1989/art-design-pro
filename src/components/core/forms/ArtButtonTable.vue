@@ -1,6 +1,11 @@
 <!-- 表格按钮，支持文字和图标 -->
 <template>
-  <div :class="['btn-text', buttonColor, extraClass]" @click="handleClick" v-auth="auth">
+  <div
+    :class="['btn-text', buttonColor, extraClass]"
+    @click="handleClick"
+    :title="title"
+    v-auth="auth"
+  >
     <i v-if="iconContent" class="iconfont-sys" v-html="iconContent" :style="iconStyle"></i>
     <span v-if="props.text">{{ props.text }}</span>
   </div>
@@ -20,6 +25,7 @@
       iconBgColor?: string // 外部传入的图标背景色
       auth?: string // 外部传入的权限名称
       extraClass?: string // 外部传入的额外样式
+      title?: string
     }>(),
     {}
   )

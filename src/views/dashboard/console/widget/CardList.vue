@@ -1,6 +1,6 @@
 <template>
   <ul class="card-list" :style="{ marginTop: showWorkTab ? '0' : '10px' }">
-    <li class="art-custom-card" v-for="(item, index) in dataList" :key="index">
+    <li class="art-custom-card" v-for="(item, index) in cardData" :key="index">
       <span class="des subtitle">{{ item.des }}</span>
       <CountTo class="number box-title" :endVal="item.num" :duration="1000" separator=""></CountTo>
       <div class="change-box">
@@ -20,10 +20,30 @@
 <script setup lang="ts">
   import { useSettingStore } from '@/store/modules/setting'
   import { CountTo } from 'vue3-count-to'
+  import type { PropType } from 'vue'
 
   const { showWorkTab } = storeToRefs(useSettingStore())
 
-  const dataList = reactive([
+  // 定义卡片数据类型
+  interface CardItem {
+    des: string
+    icon: string
+    startVal: number
+    duration: number
+    num: number
+    change: string
+  }
+
+  // 定义props，接收外部传入的数据
+  const props = defineProps({
+    dataList: {
+      type: Array as PropType<CardItem[]>,
+      default: () => []
+    }
+  })
+
+  // 默认数据
+  const defaultDataList = reactive<CardItem[]>([
     {
       des: '总访问次数',
       icon: '&#xe721;',
@@ -57,6 +77,11 @@
       change: '+30%'
     }
   ])
+
+  // 使用计算属性，如果外部传入数据则使用外部数据，否则使用默认数据
+  const cardData = computed<CardItem[]>(() => {
+    return props.dataList.length > 0 ? props.dataList : defaultDataList
+  })
 </script>
 
 <style lang="scss" scoped>

@@ -19,7 +19,12 @@
           @refresh="loadLogList"
         >
           <template #left>
-            <el-button type="danger" @click="handleDelete" v-auth="'log_delete'" v-ripple
+            <el-button
+              title="批量删除系统操作日志"
+              type="danger"
+              @click="handleDelete"
+              v-auth="'log_delete'"
+              v-ripple
               >批量删除</el-button
             >
           </template>

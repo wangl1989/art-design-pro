@@ -86,8 +86,16 @@
           </div>
           <template #footer>
             <div class="dialog-footer">
-              <el-button @click="dialogVisible = false">取消</el-button>
-              <el-button type="primary" @click="handleSubmit" :loading="submitLoading"
+              <el-button
+                :title="dialogType === 'add' ? '取消添加用户' : '取消编辑用户'"
+                @click="dialogVisible = false"
+                >取消</el-button
+              >
+              <el-button
+                :title="dialogType === 'add' ? '保存添加用户' : '保存编辑用户'"
+                type="primary"
+                @click="handleSubmit"
+                :loading="submitLoading"
                 >提交</el-button
               >
             </div>
@@ -324,16 +332,19 @@
       formatter: (row: any) => {
         return h('div', [
           h(ArtButtonTable, {
+            title: '编辑用户信息',
             type: 'edit',
             auth: 'user_edit',
             onClick: () => showDialog('edit', row)
           }),
           h(ArtButtonTable, {
+            title: '删除用户',
             type: 'delete',
             auth: 'user_delete',
             onClick: () => deleteUser(row.id)
           }),
           h(ArtButtonTable, {
+            title: '给用户分配额外权限',
             type: 'more',
             auth: 'user_assign',
             onClick: () => navigateToPermissionPage(row)
@@ -494,7 +505,7 @@
       })
       .catch(() => {
         // 用户取消操作，无需提示或处理，捕获 rejection 防止控制台报错
-        // ElMessage.info('已取消注销') // 可以选择性地添加提示
+        ElMessage.info('取消注销用户操作') // 可以选择性地添加提示
       })
   }
 

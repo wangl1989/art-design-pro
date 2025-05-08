@@ -17,17 +17,39 @@
           @refresh="loadTaskList"
         >
           <template #left>
-            <ElButton @click="handleAdd" v-auth="'quartzjob_add'" v-ripple>新增任务</ElButton>
-            <ElButton type="danger" @click="handleBatchDelete" v-auth="'quartzjob_delete'" v-ripple
+            <ElButton title="新增定时任务" @click="handleAdd" v-auth="'quartzjob_add'" v-ripple
+              >新增任务</ElButton
+            >
+            <ElButton
+              title="批量删除定时任务"
+              type="danger"
+              @click="handleBatchDelete"
+              v-auth="'quartzjob_delete'"
+              v-ripple
               >批量删除</ElButton
             >
-            <ElButton type="warning" @click="handleBatchPause" v-auth="'quartzjob_pause'" v-ripple
+            <ElButton
+              title="批量暂停定时任务"
+              type="warning"
+              @click="handleBatchPause"
+              v-auth="'quartzjob_pause'"
+              v-ripple
               >批量暂停</ElButton
             >
-            <ElButton type="success" @click="handleBatchResume" v-auth="'quartzjob_resume'" v-ripple
+            <ElButton
+              title="批量恢复定时任务"
+              type="success"
+              @click="handleBatchResume"
+              v-auth="'quartzjob_resume'"
+              v-ripple
               >批量恢复</ElButton
             >
-            <ElButton type="info" @click="handleBatchRun" v-auth="'quartzjob_run'" v-ripple
+            <ElButton
+              title="立即执行定时任务"
+              type="info"
+              @click="handleBatchRun"
+              v-auth="'quartzjob_run'"
+              v-ripple
               >立即执行</ElButton
             >
           </template>
@@ -101,8 +123,18 @@
           </ElFormItem>
         </ElForm>
         <template #footer>
-          <ElButton @click="dialogVisible = false">取消</ElButton>
-          <ElButton type="primary" @click="submitForm" :loading="submitLoading">确定</ElButton>
+          <ElButton
+            :title="dialogType === 'add' ? '取消新增定时任务' : '取消编辑定时任务'"
+            @click="dialogVisible = false"
+            >取消</ElButton
+          >
+          <ElButton
+            :title="dialogType === 'add' ? '保存新增定时任务' : '保存编辑定时任务'"
+            type="primary"
+            @click="submitForm"
+            :loading="submitLoading"
+            >确定</ElButton
+          >
         </template>
       </ElDialog>
     </div>
@@ -239,27 +271,32 @@
       formatter: (row) => {
         return h(ElSpace, { size: 'small' }, () => [
           h(ArtButtonTable, {
+            title: '编辑定时任务',
             type: 'edit',
             auth: 'quartzjob_edit',
             onClick: () => handleEdit(row)
           }),
           h(ArtButtonTable, {
+            title: '删除定时任务',
             type: 'delete',
             auth: 'quartzjob_delete',
             onClick: () => handleDelete(row)
           }),
           row.status === 0
             ? h(ArtButtonTable, {
+                title: '暂停定时任务',
                 type: 'warning',
                 auth: 'quartzjob_pause',
                 onClick: () => handlePause(row)
               })
             : h(ArtButtonTable, {
+                title: '恢复定时任务',
                 type: 'success',
                 auth: 'quartzjob_resume',
                 onClick: () => handleResume(row)
               }),
           h(ArtButtonTable, {
+            title: '立即执行任务',
             type: 'info',
             auth: 'quartzjob_run',
             onClick: () => handleRun(row)

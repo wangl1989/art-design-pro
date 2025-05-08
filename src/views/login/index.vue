@@ -141,7 +141,7 @@
   import { useSettingStore } from '@/store/modules/setting'
   import type { FormInstance, FormRules } from 'element-plus'
   import { onMounted } from 'vue'
-  import FingerprintJS from '@fingerprintjs/fingerprintjs' // 导入 FingerprintJS
+  import { getDeviceId } from '@/utils/deviceId'
 
   const settingStore = useSettingStore()
   const { isDark, systemThemeType } = storeToRefs(settingStore)
@@ -195,7 +195,8 @@
           password: formData.password,
           captcha: formData.captcha
         }
-        const deviceId = localStorage.getItem('deviceId') || ''
+        // 获取设备ID
+        const deviceId = await getDeviceId()
 
         try {
           const res = await UserService.login(bodyParams, deviceId)
@@ -258,6 +259,7 @@
           avatar: userData.icon,
           email: userData.email,
           tel: userData.tel,
+          location: userData.location || '',
           // 如果缺少token字段，可以从store中获取当前保存的token
           token: userStore.info.accessToken || '',
           accessToken: userStore.info.accessToken || '',
@@ -338,34 +340,10 @@
     }
   }
 
-  // --- 修改：使用 FingerprintJS 获取或生成 Device ID ---
-  const getOrGenerateDeviceId = async (): Promise<string> => {
-    const storedDeviceId = localStorage.getItem('deviceId')
-    if (storedDeviceId) {
-      return storedDeviceId
-    } else {
-      try {
-        // 加载 FingerprintJS 代理
-        const fp = await FingerprintJS.load()
-        // 获取访问者 ID
-        const result = await fp.get()
-        const visitorId = result.visitorId
-        localStorage.setItem('deviceId', visitorId)
-        return visitorId
-      } catch (error) {
-        console.error('FingerprintJS error:', error)
-        // FingerprintJS 出错时的回退策略
-        const fallbackId = `fallback-${Date.now()}-${Math.random().toString(36).substring(2)}`
-        localStorage.setItem('deviceId', fallbackId)
-        return fallbackId
-      }
-    }
-  }
   // --- 结束修改 ---
 
   // 组件挂载时获取初始验证码并确保 deviceId 存在 (修改为异步)
   onMounted(async () => {
-    await getOrGenerateDeviceId() // 等待 deviceId 生成或获取完成
     refreshCaptcha() // 然后再获取验证码
   })
 </script>

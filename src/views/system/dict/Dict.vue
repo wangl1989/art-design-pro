@@ -89,8 +89,16 @@
 
           <template #footer>
             <div class="dialog-footer">
-              <el-button @click="dialogVisible = false">取消</el-button>
-              <el-button type="primary" @click="submitForm" :loading="submitLoading"
+              <el-button
+                :title="isEdit ? '取消编辑字典' : '取消新增字典'"
+                @click="dialogVisible = false"
+                >取消</el-button
+              >
+              <el-button
+                :title="isEdit ? '保存编辑字典' : '保存新增字典'"
+                type="primary"
+                @click="submitForm"
+                :loading="submitLoading"
                 >确定</el-button
               >
             </div>
@@ -116,8 +124,14 @@
 
           <template #footer>
             <div class="dialog-footer">
-              <el-button @click="typeDialogVisible = false">取消</el-button>
-              <el-button type="primary" @click="submitTypeForm" :loading="submitLoading"
+              <el-button title="取消编辑字典类型" @click="typeDialogVisible = false"
+                >取消</el-button
+              >
+              <el-button
+                title="保存字典类型"
+                type="primary"
+                @click="submitTypeForm"
+                :loading="submitLoading"
                 >确定</el-button
               >
             </div>
@@ -209,23 +223,27 @@
       formatter: (row: DictRecord) =>
         h(ElSpace, null, () => [
           h(ArtButtonTable, {
+            title: '字典编辑',
             type: 'edit',
             auth: 'dict_edit',
             onClick: () => handleEdit(row)
           }),
           h(ArtButtonTable, {
+            title: '根据类型增加字典',
             icon: '&#xe623;',
             iconColor: '#67C23A',
             auth: 'dict_type_add',
             onClick: () => handleAddByType(row)
           }),
           h(ArtButtonTable, {
+            title: '编辑字典类型',
             icon: '&#xe720;',
             iconColor: '#E6A23C',
             auth: 'dict_edit_type',
             onClick: () => handleEditType(row)
           }),
           h(ArtButtonTable, {
+            title: '删除字典',
             type: 'delete',
             auth: 'dict_delete',
             onClick: () => handleDelete(row)

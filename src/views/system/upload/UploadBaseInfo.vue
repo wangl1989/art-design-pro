@@ -28,7 +28,12 @@
           <el-card class="upload-card" :class="{ enabled: item.enable }" shadow="never">
             <div class="card-header">
               <div class="header-actions">
-                <span class="edit-icon" v-auth="'uploadtype_edit'" @click="handleEditUpload(item)">
+                <span
+                  title="编辑上传方式"
+                  class="edit-icon"
+                  v-auth="'uploadtype_edit'"
+                  @click="handleEditUpload(item)"
+                >
                   <i class="iconfont-sys" v-html="'&#xe816;'"></i>
                 </span>
               </div>
@@ -71,6 +76,7 @@
                 <span>
                   测试图片：
                   <el-button
+                    title="查看测试图片"
                     type="primary"
                     link
                     v-auth="'uploadtype_show_test'"
@@ -233,6 +239,7 @@
 
         <div class="upload-container">
           <el-upload
+            title="上传测试图片"
             class="upload-demo"
             :action="''"
             :auto-upload="false"

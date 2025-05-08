@@ -8,6 +8,7 @@ export interface UserInfo {
   avatar: string
   email?: string
   tel?: string
+  location?: string
   token: string
   accessToken?: string // JWT 访问令牌
   refreshToken?: string // JWT 刷新令牌

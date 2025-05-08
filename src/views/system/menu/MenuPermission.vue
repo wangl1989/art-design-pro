@@ -11,14 +11,24 @@
                 <div class="card-header-actions">
                   <!-- 用户权限保存按钮 -->
                   <span v-if="permissionType.toLowerCase() === 'user'">
-                    <el-button type="primary" size="small" @click="savePermissions">
+                    <el-button
+                      title="分配用户额外权限"
+                      type="primary"
+                      size="small"
+                      @click="savePermissions"
+                    >
                       保存用户权限
                     </el-button>
                   </span>
 
                   <!-- 角色权限保存按钮 -->
                   <span v-if="permissionType.toLowerCase() === 'role' || !permissionType">
-                    <el-button type="primary" size="small" @click="savePermissions">
+                    <el-button
+                      title="分配角色菜单和权限"
+                      type="primary"
+                      size="small"
+                      @click="savePermissions"
+                    >
                       保存角色权限
                     </el-button>
                   </span>
@@ -674,8 +684,6 @@
 
     if (!menu || !menu.meta || !menu.meta.authList) return
 
-    console.log('菜单权限列表:', menu.meta.authList)
-
     // 将菜单下的权限添加到各自的列表中
     menu.meta.authList.forEach((auth) => {
       if (!auth) return
@@ -685,15 +693,6 @@
         ...auth,
         checked: checkedPermissionIds.value.includes(auth.id)
       }
-
-      console.log(
-        '处理权限:',
-        auth.permissionName,
-        '类型:',
-        auth.permissionType,
-        '类型的类型:',
-        typeof auth.permissionType
-      )
 
       // 根据权限类型分类 - 处理数字或字符串类型
       const permType = Number(auth.permissionType)
@@ -709,10 +708,6 @@
         pagePermissions.value.push(permCopy)
       }
     })
-
-    console.log('API权限数量:', apiPermissions.value.length)
-    console.log('按钮权限数量:', buttonPermissions.value.length)
-    console.log('路由权限数量:', pagePermissions.value.length)
 
     // 权限加载后，延迟重新计算高度以确保DOM已更新
     setTimeout(() => {
@@ -1049,22 +1044,6 @@
           // 设置通用最大高度（用于兼容现有代码）
           listMaxHeight.value = avgHeight
         }
-
-        console.log({
-          cardHeight,
-          cardHeaderHeight,
-          summaryHeight,
-          allHeadersHeight,
-          bottomMargin,
-          availableHeight,
-          apiContentHeight,
-          buttonContentHeight,
-          pageContentHeight,
-          totalContentHeight,
-          apiListHeight: apiListHeight.value,
-          buttonListHeight: buttonListHeight.value,
-          pageListHeight: pageListHeight.value
-        })
       } catch (error) {
         console.error('计算高度时出错:', error)
         // 发生错误时使用一个合理的默认值
@@ -1116,15 +1095,6 @@
           } else {
             treeContainer.classList.remove('needs-scroll')
           }
-
-          console.log(
-            '菜单树内容高度:',
-            totalContentHeight,
-            '容器高度:',
-            treeContainer.clientHeight,
-            '需要滚动:',
-            needsScroll
-          )
         }
       }
     })

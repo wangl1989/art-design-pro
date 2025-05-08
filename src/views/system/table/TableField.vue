@@ -46,10 +46,17 @@
           @refresh="loadFieldList"
         >
           <template #left>
-            <ElButton type="primary" @click="handleAdd" v-auth="'field_add'" v-ripple>
+            <ElButton
+              title="新增表格字段"
+              type="primary"
+              @click="handleAdd"
+              v-auth="'field_add'"
+              v-ripple
+            >
               新增字段
             </ElButton>
             <ElButton
+              title="批量删除表格字段"
               type="danger"
               @click="handleBatchDelete"
               :disabled="selectedFields.length === 0"
@@ -147,8 +154,18 @@
           </el-form-item>
         </el-form>
         <template #footer>
-          <el-button @click="fieldDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitForm" :loading="submitLoading">确定</el-button>
+          <el-button
+            :title="dialogType === 'add' ? '取消新增字段' : '取消编辑字段'"
+            @click="fieldDialogVisible = false"
+            >取消</el-button
+          >
+          <el-button
+            :title="dialogType === 'add' ? '保存新增字段' : '保存编辑字段'"
+            type="primary"
+            @click="submitForm"
+            :loading="submitLoading"
+            >确定</el-button
+          >
         </template>
       </el-dialog>
     </div>
@@ -287,11 +304,13 @@
       formatter: (row) =>
         h(ElSpace, null, () => [
           h(ArtButtonTable, {
+            title: '编辑字段',
             type: 'edit',
             auth: 'field_edit',
             onClick: () => handleEdit(row)
           }),
           h(ArtButtonTable, {
+            title: '删除字段',
             type: 'delete',
             auth: 'field_batch_delete', // 注意：权限标识可能需要区分单行删除和批量删除
             onClick: () => handleDelete(row)

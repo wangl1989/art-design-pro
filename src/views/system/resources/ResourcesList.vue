@@ -2,7 +2,11 @@
   <div class="page-content">
     <el-row :gutter="15" class="mb-4">
       <el-col :xs="19" :sm="12" :lg="6">
-        <el-input v-model="queryParams.fileName" placeholder="请输入文件名搜索"></el-input>
+        <el-input
+          title="搜索系统资源文件"
+          v-model="queryParams.fileName"
+          placeholder="请输入文件名搜索"
+        ></el-input>
       </el-col>
       <el-col :xs="4" :sm="6" :lg="3">
         <el-select v-model="queryParams.source" placeholder="资源来源" clearable>
@@ -50,12 +54,14 @@
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="scope">
           <ArtButtonTable
+            title="预览系统文件"
             text="预览"
             icon="&#xe700;"
             iconColor="#67C23A"
             @click="previewResource(scope.row)"
           />
           <ArtButtonTable
+            title="复制文件链接"
             text="复制链接"
             icon="&#xe63a;"
             iconColor="#125232"
@@ -90,7 +96,9 @@
         <div v-else class="preview-other">
           <el-icon><Document /></el-icon>
           <p>此文件类型不支持直接预览，请下载后查看</p>
-          <el-button type="primary" @click="downloadResource">下载文件</el-button>
+          <el-button title="下载资源文件" type="primary" @click="downloadResource"
+            >下载文件</el-button
+          >
         </div>
       </div>
     </el-dialog>

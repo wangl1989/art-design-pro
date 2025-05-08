@@ -2,12 +2,11 @@
   <div class="region active-user art-custom-card">
     <div class="chart" ref="chartRef"></div>
     <div class="text">
-      <h3 class="box-title">用户概述</h3>
-      <p class="subtitle">比上周 <span class="text-success">+23%</span></p>
-      <p class="subtitle">我们为您创建了多个选项，可将它们组合在一起并定制为像素完美的页面</p>
+      <h3 class="box-title">访问量概述</h3>
+      <p class="subtitle">上方是当前系统最近9天的访问数据图标</p>
     </div>
     <div class="list">
-      <div v-for="(item, index) in list" :key="index">
+      <div v-for="(item, index) in displayList" :key="index">
         <p>{{ item.num }}</p>
         <p class="subtitle">{{ item.name }}</p>
       </div>
@@ -16,11 +15,43 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted, onUnmounted } from 'vue'
+  import { ref, onMounted, onUnmounted, computed } from 'vue'
   import * as echarts from 'echarts'
   import { useECharts } from '@/utils/echarts/useECharts'
   import { useSettingStore } from '@/store/modules/setting'
   import { getCssVariable } from '@/utils/colors'
+  import type { PropType } from 'vue'
+
+  // 定义接收的props类型
+  interface ChartItem {
+    dates: number[] | string[]
+    values: number[]
+  }
+
+  interface ListItem {
+    name: string
+    num: string
+  }
+
+  // 定义组件的props
+  const props = defineProps({
+    chartData: {
+      type: Object as PropType<ChartItem>,
+      default: () => ({
+        dates: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        values: [160, 100, 150, 80, 190, 100, 175, 120, 160]
+      })
+    },
+    listData: {
+      type: Array as PropType<ListItem[]>,
+      default: () => [
+        { name: '总用户量', num: '32k' },
+        { name: '总访问量', num: '128k' },
+        { name: '总点击量', num: '1.2k' },
+        { name: '平均访问时长', num: '20S' }
+      ]
+    }
+  })
 
   const chartRef = ref<HTMLDivElement | null>(null)
   const { setOptions, removeResize, resize } = useECharts(chartRef as Ref<HTMLDivElement>)
@@ -35,12 +66,10 @@
     })
   })
 
-  const list = [
-    { name: '总用户量', num: '32k' },
-    { name: '总访问量', num: '128k' },
-    { name: '日访问量', num: '1.2k' },
-    { name: '周同比', num: '+5%' }
-  ]
+  // 使用计算属性处理显示的列表数据
+  const displayList = computed(() => {
+    return props.listData
+  })
 
   const createChart = () => {
     setOptions({
@@ -76,7 +105,7 @@
       },
       xAxis: {
         type: 'category',
-        data: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        data: props.chartData.dates,
         boundaryGap: [0, 0.01],
         splitLine: {
           show: false
@@ -96,7 +125,7 @@
       },
       series: [
         {
-          data: [160, 100, 150, 80, 190, 100, 175, 120, 160],
+          data: props.chartData.values,
           type: 'bar',
           barMaxWidth: 36,
           itemStyle: {
@@ -116,6 +145,15 @@
       ]
     })
   }
+
+  // 监听chartData的变化，重新渲染图表
+  watch(
+    () => props.chartData,
+    () => {
+      createChart()
+    },
+    { deep: true }
+  )
 
   onMounted(() => {
     createChart()

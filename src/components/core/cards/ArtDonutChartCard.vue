@@ -7,12 +7,8 @@
           <div>
             <p class="value">{{ formatNumber(value) }}</p>
             <div class="percentage" :class="{ 'is-increase': percentage > 0 }">
-              {{ percentage > 0 ? '+' : '' }}{{ percentage }}% 较去年
+              占总{{ title }} {{ percentage }}%
             </div>
-          </div>
-          <div class="chart-legend">
-            <span class="legend-item current">{{ currentYear }}</span>
-            <span class="legend-item previous">{{ previousYear }}</span>
           </div>
         </div>
         <div class="chart-section">
@@ -26,7 +22,7 @@
 <script setup lang="ts">
   import { useChart, useChartOps } from '@/composables/useChart'
   import { EChartsOption } from 'echarts'
-  const { chartRef, isDark, initChart } = useChart()
+  const { chartRef, isDark, initChart, updateChart } = useChart()
 
   interface Props {
     value: number
@@ -35,7 +31,7 @@
     currentYear?: string
     previousYear?: string
     height?: number
-    color?: string
+    color?: string | [string, string]
     radius?: [string, string]
     data: [number, number]
   }
@@ -44,20 +40,60 @@
     value: 0,
     title: '',
     percentage: 0,
-    currentYear: '2022',
-    previousYear: '2021',
+    currentYear: 'Active',
+    previousYear: 'Inactive',
     height: 9,
     color: '',
     radius: () => ['70%', '90%'],
-    data: () => [0, 0]
+    data: () => [0, 100]
   })
+
+  function getCssVariableValue(cssVar: string): string {
+    if (typeof window === 'undefined' || !cssVar) return '#000000'
+    if (cssVar.startsWith('var(')) {
+      const varName = cssVar.match(/--[\w-]+/)?.[0]
+      if (varName) {
+        try {
+          return getComputedStyle(document.documentElement).getPropertyValue(varName).trim()
+        } catch (e) {
+          console.warn(`Failed to parse CSS variable: ${cssVar}`, e)
+          return '#000000'
+        }
+      }
+    }
+    return cssVar
+  }
 
   const formatNumber = (num: number) => {
     return num.toLocaleString()
   }
 
   const options: () => EChartsOption = () => {
-    const computedColor = props.color || useChartOps().themeColor
+    let activeColorValue: string
+    let inactiveColorValue: string
+
+    if (Array.isArray(props.color) && props.color.length === 2) {
+      activeColorValue = props.color[0]
+      inactiveColorValue = props.color[1]
+    } else if (typeof props.color === 'string' && props.color) {
+      activeColorValue = getCssVariableValue(props.color)
+      inactiveColorValue = getCssVariableValue('var(--el-fill-color-lighter)')
+    } else {
+      activeColorValue = getCssVariableValue(useChartOps().themeColor)
+      inactiveColorValue = getCssVariableValue('var(--el-fill-color-lighter)')
+    }
+
+    activeColorValue =
+      activeColorValue && activeColorValue !== '#000000' ? activeColorValue : '#409EFF'
+    inactiveColorValue =
+      inactiveColorValue && inactiveColorValue !== '#000000' ? inactiveColorValue : '#f5f7fa'
+
+    if (Array.isArray(props.color) && props.color.length === 2) {
+      if (props.color[0] === '#000000') activeColorValue = '#000000'
+      if (props.color[1] === '#000000') inactiveColorValue = '#000000'
+    } else if (typeof props.color === 'string' && props.color === '#000000') {
+      activeColorValue = '#000000'
+    }
 
     return {
       series: [
@@ -72,12 +108,12 @@
             {
               value: props.data[0],
               name: props.currentYear,
-              itemStyle: { color: computedColor }
+              itemStyle: { color: activeColorValue }
             },
             {
               value: props.data[1],
               name: props.previousYear,
-              itemStyle: { color: '#e6e8f7' }
+              itemStyle: { color: inactiveColorValue }
             }
           ]
         }
@@ -88,6 +124,14 @@
   watch(isDark, () => {
     return initChart(options())
   })
+
+  watch(
+    [() => props.data, () => props.color],
+    () => {
+      updateChart(options())
+    },
+    { deep: true }
+  )
 
   onMounted(() => {
     return initChart(options())
@@ -121,7 +165,7 @@
       flex: 1;
       flex-direction: column;
       justify-content: space-between;
-      height: 100%;
+      height: 85%;
     }
 
     .chart-section {

@@ -17,7 +17,9 @@
           @refresh="loadLogList"
         >
           <template #left>
-            <ElButton type="danger" @click="handleBatchDelete" v-ripple>批量删除</ElButton>
+            <ElButton title="批量删除定时任务" type="danger" @click="handleBatchDelete" v-ripple
+              >批量删除</ElButton
+            >
           </template>
         </ArtTableHeader>
         <!-- 表格 -->
@@ -173,6 +175,7 @@
       width: 100,
       formatter: (row) => {
         return h(ArtButtonTable, {
+          title: '删除定时任务日志',
           type: 'delete',
           onClick: () => handleDelete(row)
         })

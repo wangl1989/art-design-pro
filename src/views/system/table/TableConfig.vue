@@ -22,6 +22,7 @@
               新增表格配置
             </ElButton>
             <ElButton
+              title="批量删除表格配置"
               type="danger"
               @click="handleBatchDelete"
               v-auth="'tableconfig_batch_delete'"
@@ -134,8 +135,18 @@
           </el-form-item>
         </el-form>
         <template #footer>
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitForm" :loading="submitLoading">确定</el-button>
+          <el-button
+            :title="dialogType === 'add' ? '取消新增表格配置' : '取消编辑表格配置'"
+            @click="dialogVisible = false"
+            >取消</el-button
+          >
+          <el-button
+            :title="dialogType === 'add' ? '保存新增表格配置' : '保存编辑表格配置'"
+            type="primary"
+            @click="submitForm"
+            :loading="submitLoading"
+            >确定</el-button
+          >
         </template>
       </ElDialog>
 
@@ -301,6 +312,7 @@
           return h(
             ElButton,
             {
+              title: '可配置字段列表',
               type: 'primary',
               link: true,
               onClick: () => openFieldConfig(row)
@@ -341,16 +353,19 @@
           if (!row.delFlag) {
             buttons.push(
               h(ArtButtonTable, {
+                title: '编辑表格配置',
                 type: 'edit',
                 auth: 'tableconfig_edit',
                 onClick: () => handleEdit(row)
               }),
               h(ArtButtonTable, {
+                title: '同步表格字段配置',
                 text: '同步字段',
                 auth: 'tableconfig_sync_field',
                 onClick: () => handleSyncFields(row)
               }),
               h(ArtButtonTable, {
+                title: '删除表格配置',
                 type: 'delete',
                 auth: 'tableconfig_delete',
                 onClick: () => handleDelete(row)
@@ -359,12 +374,14 @@
           } else {
             buttons.push(
               h(ArtButtonTable, {
+                title: '恢复表格配置',
                 icon: '&#xe64b',
                 iconColor: '#67c23a',
                 auth: 'tableconfig_recover',
                 onClick: () => handleRecover(row)
               }),
               h(ArtButtonTable, {
+                title: '彻底删除表格配置',
                 type: 'delete',
                 auth: 'tableconfig_complete_delete',
                 onClick: () => handleCompletelyDelete(row)

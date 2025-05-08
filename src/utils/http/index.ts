@@ -2,9 +2,9 @@ import axios, { InternalAxiosRequestConfig, AxiosRequestConfig, AxiosResponse } 
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import EmojiText from '../emojo'
+import { getDeviceIdSync } from '@/utils/deviceId'
 import {
   getCurrentToken,
-  getDeviceId,
   getCurrentRefreshToken,
   isTokenExpiringSoon,
   isTokenExpired,
@@ -78,7 +78,7 @@ async function doRefreshToken(refreshTokenStr: string) {
 axiosInstance.interceptors.request.use(
   async (request: InternalAxiosRequestConfig) => {
     // 设置 Device-Id
-    const deviceId = getDeviceId()
+    const deviceId = getDeviceIdSync() || ''
     if (deviceId) {
       request.headers.set('Device-Id', deviceId)
     }

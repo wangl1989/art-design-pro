@@ -11,6 +11,7 @@
             />
             <div class="avatar-upload-btn" v-if="isEdit">
               <el-upload
+                title="上传用户头像"
                 class="upload-demo"
                 :action="''"
                 :auto-upload="false"
@@ -144,6 +145,7 @@
 
             <div class="el-form-item-right">
               <el-button
+                title="取消编辑用户详情"
                 v-if="isEdit"
                 type="default"
                 style="width: 90px; margin-right: 10px"
@@ -152,7 +154,13 @@
               >
                 取消
               </el-button>
-              <el-button type="primary" style="width: 90px" v-ripple @click="edit">
+              <el-button
+                :title="isEdit ? '保存用户字段' : '编辑用户字段'"
+                type="primary"
+                style="width: 90px"
+                v-ripple
+                @click="edit"
+              >
                 {{ isEdit ? '保存' : '编辑' }}
               </el-button>
             </div>
@@ -229,6 +237,7 @@
 
             <div class="el-form-item-right">
               <el-button
+                title="取消重置密码"
                 v-if="isEditPwd"
                 type="default"
                 style="width: 90px; margin-right: 10px"
@@ -237,7 +246,13 @@
               >
                 取消
               </el-button>
-              <el-button type="primary" style="width: 90px" v-ripple @click="editPwd">
+              <el-button
+                :title="isEditPwd ? '保存重置密码' : '编辑重置密码'"
+                type="primary"
+                style="width: 90px"
+                v-ripple
+                @click="editPwd"
+              >
                 {{ isEditPwd ? '保存' : '编辑' }}
               </el-button>
             </div>

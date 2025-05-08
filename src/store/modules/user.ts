@@ -8,6 +8,7 @@ import { useWorktabStore } from './worktab'
 import { getSysStorage } from '@/utils/storage'
 import { MenuListType } from '@/types/menu'
 import { useTableStore } from './table'
+import { deviceIdManager } from '@/utils/deviceId'
 
 // 用户
 export const useUserStore = defineStore('userStore', () => {
@@ -164,6 +165,7 @@ function saveStoreStorage<T>(newData: T) {
   // 合并新数据与现有数据
   const mergedData = { ...storedData, ...newData }
   localStorage.setItem(`sys-v${vs}`, JSON.stringify(mergedData))
+  initDeviceId()
 }
 
 // 初始化版本
@@ -171,5 +173,20 @@ function initVersion(version: string) {
   const vs = localStorage.getItem('version')
   if (!vs) {
     localStorage.setItem('version', version)
+  }
+}
+
+// 初始化设备ID
+function initDeviceId() {
+  const deviceId = localStorage.getItem('deviceId')
+  if (!deviceId) {
+    deviceIdManager
+      .getDeviceId()
+      .then((fingerprintId) => {
+        localStorage.setItem('deviceId', fingerprintId)
+      })
+      .catch((err) => {
+        console.error('初始化device ID失败:', err)
+      })
   }
 }

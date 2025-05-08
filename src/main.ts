@@ -19,6 +19,7 @@ import '@utils/console.ts'                          // 控制台输出内容
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { setupGlobDirectives } from './directives'
 import language from './language'
+import { analytics } from '@/utils/analytics'
 
 const app = createApp(App)
 initStore(app)
@@ -31,3 +32,23 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 app.mount('#app')
+
+// 全局事件委托处理点击
+document.addEventListener('click', (event) => {
+  const target = event.target as HTMLElement
+  
+  // 只跟踪特定元素
+  const trackableElements = [
+    'button', 'a', '[data-track]', '.el-button', 
+    '.btn', '[role="button"]', 'input[type="submit"]',
+    'input[type="button"]', '.clickable', '[aria-role="button"]',
+    'li.el-menu-item','div.btn-text','span.edit-icon','div.upload-demo'
+  ].join(',')
+  
+  // 查找最近的可跟踪元素
+  const trackElement = target.closest(trackableElements)
+  
+  if (trackElement) {
+    analytics.trackEvent(trackElement as HTMLElement)
+  }
+}, { passive: true })

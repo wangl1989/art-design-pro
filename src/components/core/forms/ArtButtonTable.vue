@@ -4,7 +4,7 @@
     :class="['btn-text', buttonColor, extraClass]"
     @click="handleClick"
     :title="title"
-    v-auth="auth"
+    :v-auth="auth"
   >
     <i v-if="iconContent" class="iconfont-sys" v-html="iconContent" :style="iconStyle"></i>
     <span v-if="props.text">{{ props.text }}</span>

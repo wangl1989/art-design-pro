@@ -233,31 +233,46 @@
     { label: '手机号', prop: 'tel' },
     { label: '登录账号', prop: 'loginName' },
     { label: '角色', prop: 'roles' },
-    { label: '状态', prop: 'locked' },
+    { label: '状态', prop: 'status' },
     { label: '位置', prop: 'location' },
     { label: '更新日期', prop: 'updateDate' },
     { label: '操作', prop: 'operation' }
   ]
 
-  // 1: 在线 2: 离线 3: 异常 4: 注销
-  const getTagType = (status: boolean) => {
+  // 1: 在线 2: 离线 3: 正常 4: 锁定 5: 注销
+  const getTagType = (status: number) => {
     switch (status) {
-      case true:
-        return 'danger'
-      case false:
+      case 1: // 在线
         return 'success'
+      case 2: // 离线
+        return 'info'
+      case 3: // 正常
+        return 'primary'
+      case 4: // 锁定
+        return 'danger'
+      case 5: // 注销
+        return 'warning'
+      default:
+        return 'info'
     }
   }
 
   // 构建标签文本
-  const buildTagText = (status: boolean) => {
-    let text = ''
-    if (status) {
-      text = '封锁'
-    } else {
-      text = '正常'
+  const buildTagText = (status: number) => {
+    switch (status) {
+      case 1:
+        return '在线'
+      case 2:
+        return '离线'
+      case 3:
+        return '正常'
+      case 4:
+        return '锁定'
+      case 5:
+        return '注销'
+      default:
+        return '未知'
     }
-    return text
   }
 
   // 动态列配置
@@ -308,10 +323,10 @@
       }
     },
     {
-      prop: 'locked',
+      prop: 'status',
       label: '状态',
       formatter: (row) => {
-        return h(ElTag, { type: getTagType(row.locked) }, () => buildTagText(row.locked))
+        return h(ElTag, { type: getTagType(row.status) }, () => buildTagText(row.status))
       }
     },
     { prop: 'location', label: '位置' },
@@ -668,6 +683,37 @@
           color: var(--art-text-gray-800);
         }
       }
+    }
+
+    // 自定义状态标签样式
+    :deep(.el-tag--success) {
+      color: #67c23a;
+      background-color: #f0f9eb;
+      border-color: #e1f3d8;
+    }
+
+    :deep(.el-tag--info) {
+      color: #909399;
+      background-color: #f4f4f5;
+      border-color: #e9e9eb;
+    }
+
+    :deep(.el-tag--primary) {
+      color: #409eff;
+      background-color: #ecf5ff;
+      border-color: #d9ecff;
+    }
+
+    :deep(.el-tag--danger) {
+      color: #f56c6c;
+      background-color: #fef0f0;
+      border-color: #fde2e2;
+    }
+
+    :deep(.el-tag--warning) {
+      color: #e6a23c;
+      background-color: #fdf6ec;
+      border-color: #faecd8;
     }
   }
 </style>

@@ -47,6 +47,7 @@ export interface UserDetailResponse {
       pageUrl: string
     } | null
   }>
+  status: number // 状态 1.在线 2.离线 3.正常 4.锁定 5.注销
   delFlag: boolean
   deviceId: string | null
   location?: string | null
@@ -150,4 +151,20 @@ export interface UpdateCurrentUserInfoParams {
   remarks?: string
   icon?: string
   location?: string
+}
+
+/**
+ * 用户当前设备
+ */
+export interface UserDeviceRecord {
+  ip: string // 此设备最后登录ip地址
+  deviceId: string // 设备ID
+  country: string // 登录国家
+  province: string // 登录省份
+  city: string // 登录城市
+  region: string // 登录地区
+  os: string // 操作系统
+  browser: string // 浏览器
+  online: boolean // 是否在线
+  currentDevice: boolean // 是否当前设备
 }

@@ -11,13 +11,14 @@ import {
   AddMenuParams,
   EditMenuParams,
   AddPermissionParams,
-  EditPermissionParams
+  EditPermissionParams,
+  MenuDetail
 } from '@/api/model/menuModel' // 导入菜单和权限参数接口
 
 // 菜单接口
 export const menuService = {
   async getMenuList(
-    delay: number = 300
+    delay: number = 0
   ): Promise<{ menuList: MenuListType[]; closeLoading: () => void }> {
     try {
       // 获取到的菜单数据
@@ -66,6 +67,13 @@ export const menuService = {
 }
 
 export class MenuApiService {
+  // 获取菜单详细信息
+  static getCurrentMenuDetail() {
+    return request.get<BaseResult<MenuDetail>>({
+      url: `/api/admin/menu/tree`
+    })
+  }
+
   // 新增菜单
   static addMenu(params: AddMenuParams) {
     // 直接返回 request.post 返回的 Promise

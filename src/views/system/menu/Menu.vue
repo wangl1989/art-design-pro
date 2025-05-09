@@ -67,11 +67,22 @@
           <template #default="scope">
             <ArtButtonTable
               title="新增菜单或权限"
+              auth="sub_menu_add"
               type="add"
               @click="showModel('menu', null, false, scope.row)"
             />
-            <ArtButtonTable title="编辑菜单" type="edit" @click="showDialog('edit', scope.row)" />
-            <ArtButtonTable title="删除菜单或权限" type="delete" @click="deleteMenu(scope.row)" />
+            <ArtButtonTable
+              title="编辑菜单"
+              auth="menu_edit"
+              type="edit"
+              @click="showDialog('edit', scope.row)"
+            />
+            <ArtButtonTable
+              title="删除菜单或权限"
+              auth="menu_delete"
+              type="delete"
+              @click="deleteMenu(scope.row)"
+            />
           </template>
         </el-table-column>
       </template>
@@ -409,9 +420,9 @@
   import type { FormInstance, FormRules } from 'element-plus'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { IconTypeEnum } from '@/enums/appEnum'
-  import { formatMenuTitle } from '@/utils/menu'
+  import { formatMenuTitle, processMenuDetail } from '@/utils/menu'
   import { formatDate } from '@/utils/date'
-  import { reactive, ref, computed, nextTick } from 'vue'
+  import { reactive, ref, computed, nextTick, onMounted } from 'vue'
   import PermissionList from '@/components/Permission/PermissionList.vue'
   import { menuService, MenuApiService } from '@/api/menuApi'
   import type { AddMenuParams, EditMenuParams } from '@/api/model/menuModel'
@@ -425,7 +436,34 @@
     ButtonPermission
   } from '@/api/model/menuModel'
 
-  const { menuList } = storeToRefs(useMenuStore())
+  // 菜单列表数据
+  const menuDataList = ref<any[]>([])
+
+  // 获取菜单元数据
+  const fetchMenuData = async () => {
+    try {
+      const response = await MenuApiService.getCurrentMenuDetail()
+      if (response.success && response.data) {
+        // 处理菜单数据为需要的格式
+        if (Array.isArray(response.data)) {
+          menuDataList.value = response.data.map((menu) => processMenuDetail(menu))
+        } else {
+          // 如果返回单个对象，也包装成数组
+          menuDataList.value = [processMenuDetail(response.data)]
+        }
+      } else {
+        ElMessage.error(response.message || '获取菜单数据失败')
+      }
+    } catch (error) {
+      console.error('获取菜单数据失败:', error)
+      ElMessage.error('获取菜单数据失败')
+    }
+  }
+
+  // 在组件挂载时获取菜单数据
+  onMounted(() => {
+    fetchMenuData()
+  })
 
   // 用于跟踪每个菜单的权限列表是否显示
   const authListVisible = reactive<Record<number, boolean>>({})
@@ -539,7 +577,7 @@
     return labelPosition.value === 'menu' ? menuRules : permissionRules
   })
 
-  const tableData = computed(() => menuList.value)
+  const tableData = computed(() => menuDataList.value)
 
   const isEdit = ref(false)
   const formRef = ref<FormInstance>()
@@ -682,6 +720,7 @@
           // 刷新列表数据
           const { menuList: newMenuList, closeLoading } = await menuService.getMenuList(0) // 立即获取最新数据
           menuStore.setMenuList(newMenuList) // 更新 store
+          fetchMenuData() // 刷新菜单列表
           closeLoading() // 关闭加载动画
         } catch (error: any) {
           ElMessage.error(error.message || `${isEdit.value ? '编辑' : '新增'}失败`)
@@ -872,6 +911,7 @@
       // 刷新菜单列表
       const { menuList: newMenuList, closeLoading } = await menuService.getMenuList(0)
       useMenuStore().setMenuList(newMenuList)
+      fetchMenuData() // 刷新菜单列表
       closeLoading()
     } catch (error: any) {
       if (error !== 'cancel') {
@@ -899,6 +939,7 @@
       // 刷新菜单列表
       const { menuList: newMenuList, closeLoading } = await menuService.getMenuList(0)
       useMenuStore().setMenuList(newMenuList)
+      fetchMenuData() // 刷新菜单列表
       closeLoading()
     } catch (error: any) {
       if (error !== 'cancel') {

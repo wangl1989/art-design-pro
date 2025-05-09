@@ -21,6 +21,7 @@ export type MenuListType = {
     isIframe?: boolean // 是否是 iframe
     keepAlive: boolean // 是否缓存
     originalPath?: string // 原始path路径
+    buttonKeys?: string[] // 按钮权限标识集合
     authList?: Array<{
       id: number
       permissionName?: string //权限名称

@@ -10,7 +10,8 @@ import {
   ChangePasswordParams,
   AssignUserPermissionParams,
   UserLocationResponse,
-  UpdateCurrentUserInfoParams
+  UpdateCurrentUserInfoParams,
+  UserDeviceRecord
 } from './model/userModel'
 export class UserService {
   // 登录 - 接收 body 和 header 值
@@ -123,6 +124,13 @@ export class UserService {
     return request.put<BaseResult>({
       url: '/api/admin/user/editCurrentUser',
       params
+    })
+  }
+
+  // 获取用户当前设备
+  static getUserDevice() {
+    return request.get<BaseResult<UserDeviceRecord>>({
+      url: '/api/admin/userDevice/userDevices'
     })
   }
 }

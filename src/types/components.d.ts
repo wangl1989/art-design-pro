@@ -142,8 +142,6 @@ declare module 'vue' {
     LoginLeftView: typeof import('./../components/core/views/login/LoginLeftView.vue')['default']
     PageWrapper: typeof import('./../components/Page/PageWrapper.vue')['default']
     PermissionList: typeof import('./../components/Permission/PermissionList.vue')['default']
-    PermissionTree: typeof import('./../components/Permission/PermissionTree.vue')['default']
-    PermissionTreeTable: typeof import('./../components/Permission/PermissionTreeTable.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SidebarSubmenu: typeof import('./../components/core/layouts/art-menus/art-sidebar-menu/widget/SidebarSubmenu.vue')['default']

@@ -383,8 +383,9 @@
   import { useMenuStore } from '@/store/modules/menu'
   import { RoleService } from '@/api/roleApi'
   import { UserService } from '@/api/usersApi'
-  import { formatMenuTitle } from '@/utils/menu'
+  import { formatMenuTitle, processMenuDetail } from '@/utils/menu'
   import { MenuListType } from '@/types/menu'
+  import { menuService, MenuApiService } from '@/api/menuApi'
   import type { TagProps } from 'element-plus'
 
   // 定义自定义的权限项类型
@@ -426,8 +427,8 @@
   const route = useRoute()
 
   // 菜单和权限数据
-  const menuStore = useMenuStore()
-  const menuList = computed(() => menuStore.menuList)
+  // 使用ref替代computed获取menuList
+  const menuListData = ref<MenuListType[]>([])
   const menuTreeRef = ref()
   const loading = ref(false)
   const roleId = ref<number>(0)
@@ -468,6 +469,30 @@
     )
   })
 
+  // 获取菜单元数据
+  const fetchMenuData = async () => {
+    loading.value = true
+    try {
+      const response = await MenuApiService.getCurrentMenuDetail()
+      if (response.success && response.data) {
+        // 处理菜单数据为需要的格式
+        if (Array.isArray(response.data)) {
+          menuListData.value = response.data.map((menu) => processMenuDetail(menu))
+        } else {
+          // 如果返回单个对象，也包装成数组
+          menuListData.value = [processMenuDetail(response.data)]
+        }
+      } else {
+        ElMessage.error(response.message || '获取菜单数据失败')
+      }
+    } catch (error) {
+      console.error('获取菜单数据失败:', error)
+      ElMessage.error('获取菜单数据失败')
+    } finally {
+      loading.value = false
+    }
+  }
+
   // 仅包含菜单的树数据
   const menuTreeData = computed(() => {
     const processMenuData = (menus: MenuListType[]): any[] => {
@@ -485,7 +510,7 @@
         return menuNode
       })
     }
-    return processMenuData(menuList.value)
+    return processMenuData(menuListData.value)
   })
 
   // 方法标签类型
@@ -523,6 +548,9 @@
   const initData = async () => {
     loading.value = true
     try {
+      // 获取菜单数据
+      await fetchMenuData()
+
       // 获取路由参数中的type，决定是否显示复选框
       const routeType = route.params.type || route.query.type
       if (routeType) {
@@ -851,6 +879,11 @@
         } else {
           ElMessage.error(response.message || '保存失败')
         }
+        // 刷新列表数据
+        const menuStore = useMenuStore()
+        const { menuList: newMenuList, closeLoading } = await menuService.getMenuList(0) // 立即获取最新数据
+        menuStore.setMenuList(newMenuList) // 更新 store
+        closeLoading() // 关闭加载动画
       } catch (error) {
         console.error('保存角色权限失败:', error)
         ElMessage.error('保存角色权限失败，请重试')

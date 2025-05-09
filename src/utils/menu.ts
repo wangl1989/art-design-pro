@@ -1,5 +1,6 @@
 import { $t } from '@/language'
 import { MenuListType } from '@/types/menu'
+import { MenuDetail } from '@/api/model/menuModel'
 
 // 创建递归函数处理嵌套路由
 /**
@@ -58,4 +59,43 @@ export const getIframeRoutes = () => {
  */
 export const formatMenuTitle = (title: string) => {
   return title.startsWith('menus.') ? $t(title) : title
+}
+
+/**
+ * 处理菜单详情数据,转换为菜单列表数据结构
+ * @param menuDetail 菜单详情对象
+ * @param parentPath 父级路径
+ * @returns 处理后的菜单项
+ */
+export const processMenuDetail = (menuDetail: MenuDetail, parentPath = ''): MenuListType => {
+  // 构建完整路径
+  const currentPath = menuDetail.path
+    ? menuDetail.meta?.isIframe
+      ? menuDetail.path // isIframe 为 true 时直接使用原始路径
+      : parentPath
+        ? `${parentPath}/${menuDetail.path}`.replace(/\/+/g, '/') // 规范化路径,避免多余的斜杠
+        : menuDetail.path
+    : ''
+
+  // 确保meta中存在originalPath字段
+  if (menuDetail.meta) {
+    menuDetail.meta.originalPath = menuDetail.path
+  }
+
+  return {
+    id: menuDetail.id,
+    name: menuDetail.name,
+    path: currentPath,
+    component: menuDetail.component || '',
+    meta: menuDetail.meta || {},
+    remarks: menuDetail.remarks || '',
+    parentId: menuDetail.parentId,
+    parentIds: menuDetail.parentIds,
+    level: menuDetail.level,
+    sort: menuDetail.sort,
+    updateDate: menuDetail.updateDate,
+    children: Array.isArray(menuDetail.children)
+      ? menuDetail.children.map((child) => processMenuDetail(child, currentPath))
+      : []
+  }
 }

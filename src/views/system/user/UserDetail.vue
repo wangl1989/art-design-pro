@@ -70,6 +70,29 @@
               </div>
             </div>
           </div> -->
+
+          <div class="device-table">
+            <h3>设备列表</h3>
+            <art-table :data="deviceList" :pagination="false">
+              <template #default>
+                <el-table-column label="设备ID" prop="deviceId" width="150" />
+                <el-table-column label="是否在线">
+                  <template #default="scope">
+                    <el-tag :type="scope.row.online ? 'success' : 'info'">
+                      {{ scope.row.online ? '在线' : '离线' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="当前设备">
+                  <template #default="scope">
+                    <el-tag :type="scope.row.currentDevice ? 'primary' : 'info'">
+                      {{ scope.row.currentDevice ? '是' : '否' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+              </template>
+            </art-table>
+          </div>
         </div>
 
         <!-- <el-carousel class="gallery" height="160px"
@@ -276,6 +299,8 @@
   const userInfo = computed(() => userStore.getUserInfo)
   const userDetail = ref<UserDetailResponse & { originalIcon?: string }>({} as UserDetailResponse)
   const loading = ref(false)
+  // 设备列表数据
+  const deviceList = ref<any[]>([])
 
   const isEdit = ref(false)
   const isEditPwd = ref(false)
@@ -385,6 +410,7 @@
   onMounted(async () => {
     getDate()
     await fetchUserDetail()
+    await fetchUserDevices() // 获取用户设备列表
   })
 
   // 获取用户详情
@@ -718,6 +744,25 @@
       resetPwdForm()
     }
   })
+
+  // 获取用户设备列表
+  const fetchUserDevices = async () => {
+    try {
+      const res = await UserService.getUserDevice()
+      if (res.success && res.data) {
+        // 如果API返回单个设备，转换为数组
+        if (!Array.isArray(res.data)) {
+          deviceList.value = [res.data]
+        } else {
+          deviceList.value = res.data
+        }
+      } else {
+        console.warn('获取用户设备列表失败:', res.message)
+      }
+    } catch (error) {
+      console.error('获取用户设备列表失败:', error)
+    }
+  }
 </script>
 
 <style lang="scss">
@@ -759,7 +804,6 @@
 
         .user-wrap {
           position: relative;
-          height: 600px;
           padding: 35px 40px;
           overflow: hidden;
           text-align: center;
@@ -873,6 +917,38 @@
               }
             }
           }
+
+          .device-table {
+            margin-top: 40px;
+            text-align: left;
+
+            h3 {
+              margin-bottom: 15px;
+              font-size: 15px;
+              font-weight: 500;
+            }
+
+            :deep(.art-table) {
+              background: transparent;
+              border: none;
+              box-shadow: none;
+
+              .el-table {
+                background: transparent;
+                border: 1px solid var(--art-border-color);
+                border-radius: 4px;
+
+                th {
+                  background: var(--art-bg-color);
+                }
+
+                th,
+                td {
+                  padding: 8px 12px;
+                }
+              }
+            }
+          }
         }
 
         .gallery {
@@ -886,6 +962,12 @@
               object-fit: cover;
             }
           }
+        }
+
+        :deep(.el-tag--info) {
+          color: #909399;
+          background-color: #f4f4f5;
+          border-color: #e9e9eb;
         }
       }
 

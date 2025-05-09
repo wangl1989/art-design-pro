@@ -289,6 +289,7 @@
     const cleanedItem = { ...item }
     delete cleanedItem.children
     delete cleanedItem.meta.authList
+    delete cleanedItem.meta.buttonKeys
     historyResult.value.unshift(cleanedItem)
     updateHistory()
   }

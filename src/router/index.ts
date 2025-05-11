@@ -89,32 +89,32 @@ const staticRoutes: AppRouteRecordRaw[] = [
     path: RoutesAlias.Register,
     name: 'Register',
     component: () => import('@views/register/index.vue'),
-    meta: { title: 'menus.register.title', isHideTab: true, noLogin: true, setTheme: true }
+    meta: { title: 'register.title', isHideTab: true, noLogin: true, setTheme: true }
   },
   {
     path: RoutesAlias.RegisterSendEmail,
     name: 'RegisterSendEmail',
     component: () => import('@views/register/SendEmail.vue'),
-    meta: { title: 'menus.register.sendEmail', isHideTab: true, noLogin: true, setTheme: true }
+    meta: { title: 'register.sendEmail', isHideTab: true, noLogin: true, setTheme: true }
   },
   {
     path: RoutesAlias.RegisterCheckEmail,
     name: 'RegisterCheckEmail',
     component: () => import('@views/register/CheckEmail.vue'),
-    meta: { title: 'menus.register.checkEmail', isHideTab: true, noLogin: true, setTheme: true }
+    meta: { title: 'register.checkEmail', isHideTab: true, noLogin: true, setTheme: true }
   },
   {
     path: RoutesAlias.ForgetPassword,
     name: 'ForgetPassword',
     component: () => import('@views/forget-password/index.vue'),
-    meta: { title: 'menus.forgetPassword.title', isHideTab: true, noLogin: true, setTheme: true }
+    meta: { title: 'forgetPassword.title', isHideTab: true, noLogin: true, setTheme: true }
   },
   {
     path: RoutesAlias.ForgetPasswordCheckEmail,
     name: 'ForgetPasswordCheckEmail',
     component: () => import('@views/forget-password/check-email.vue'),
     meta: {
-      title: 'menus.forgetPassword.checkEmail',
+      title: 'forgetPassword.checkEmail',
       isHideTab: true,
       noLogin: true,
       setTheme: true
@@ -125,7 +125,7 @@ const staticRoutes: AppRouteRecordRaw[] = [
     name: 'ForgetPasswordReset',
     component: () => import('@views/forget-password/reset-password.vue'),
     meta: {
-      title: 'menus.forgetPassword.resetPassword',
+      title: 'forgetPassword.resetPassword',
       isHideTab: true,
       noLogin: true,
       setTheme: true
@@ -188,6 +188,14 @@ export const router = createRouter({
 
 // 标记是否已经注册动态路由
 const isRouteRegistered = ref(false)
+
+/**
+ * 重置路由注册状态
+ * 在用户登出或切换账号时调用，确保下一个用户可以重新加载自己的菜单
+ */
+export function resetRouteRegisteredState() {
+  isRouteRegistered.value = false
+}
 
 /**
  * 路由全局前置守卫

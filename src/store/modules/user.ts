@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { LanguageEnum } from '@/enums/appEnum'
-import { router, setPageTitle } from '@/router'
+import { router, setPageTitle, resetRouteRegisteredState } from '@/router'
 import { UserInfo } from '@/types/store'
 import { useSettingStore } from './setting'
 import { useWorktabStore } from './worktab'
@@ -125,6 +125,10 @@ export const useUserStore = defineStore('userStore', () => {
       useWorktabStore().opened = []
       saveUserData()
       sessionStorage.removeItem('iframeRoutes')
+
+      // 重置路由注册状态，确保下次登录时重新加载菜单
+      resetRouteRegisteredState()
+
       router.push('/login')
     }, 300)
   }

@@ -248,9 +248,11 @@
         return 'info'
       case 3: // 正常
         return 'primary'
-      case 4: // 锁定
+      case 4: // 设备锁定
         return 'danger'
-      case 5: // 注销
+      case 5: // 账号锁定
+        return 'danger'
+      case 6: // 注销
         return 'warning'
       default:
         return 'info'
@@ -267,8 +269,10 @@
       case 3:
         return '正常'
       case 4:
-        return '锁定'
+        return '设备锁定'
       case 5:
+        return '账号锁定'
+      case 6:
         return '注销'
       default:
         return '未知'

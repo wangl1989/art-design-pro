@@ -4,7 +4,9 @@
       <div class="title">
         <h4 class="box-title">新用户</h4>
       </div>
-      <el-button class="more-btn" @click="handleMore" v-ripple>查看更多</el-button>
+      <el-button class="more-btn" v-menu-auth="'/system/user/Account'" @click="handleMore" v-ripple
+        >查看更多</el-button
+      >
     </div>
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>

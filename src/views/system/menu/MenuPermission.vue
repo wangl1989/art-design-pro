@@ -45,6 +45,7 @@
                 :default-expanded-keys="defaultExpandedKeys"
                 :show-checkbox="showCheckbox"
                 :default-checked-keys="checkedMenuIds"
+                :check-strictly="true"
                 @node-click="handleNodeClick"
                 @node-expand="handleNodeExpand"
                 @node-collapse="handleNodeCollapse"

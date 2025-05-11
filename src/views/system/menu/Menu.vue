@@ -893,7 +893,6 @@
   }
 
   const deleteMenu = async (row: any) => {
-    console.log('currentEditRow.value.id的值为:', row.id)
     try {
       await ElMessageBox.confirm(`确定要删除该菜单吗？删除后无法恢复`, '提示', {
         confirmButtonText: '确定',

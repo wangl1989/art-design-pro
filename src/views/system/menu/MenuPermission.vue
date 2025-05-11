@@ -48,7 +48,6 @@
                 @node-click="handleNodeClick"
                 @node-expand="handleNodeExpand"
                 @node-collapse="handleNodeCollapse"
-                @check="handleCheckChange"
                 highlight-current
               >
                 <template #default="{ node, data }">
@@ -799,12 +798,6 @@
       })
   }
 
-  // 处理菜单复选框选中状态变化
-  const handleCheckChange = (data: any, checked: any) => {
-    console.log('菜单选中状态变化:', data.id, checked)
-    // 这里不需要特别处理，因为el-tree会自动更新checkedKeys
-  }
-
   // 加载用户已分配的权限
   const loadUserPermissions = async (userIdValue: number) => {
     loading.value = true
@@ -832,6 +825,21 @@
       if (!userId.value) {
         ElMessage.warning('请先选择一个用户')
         return
+      }
+
+      // 检查权限ID集合是否为空，如果为空则弹出确认框
+      if (checkedPermissionIds.value.length === 0) {
+        try {
+          await ElMessageBox.confirm('您当前正在清空用户单独权限，是否确认？', '清空确认', {
+            confirmButtonText: '确认',
+            cancelButtonText: '取消',
+            type: 'warning'
+          })
+          // 用户确认清空权限，继续执行
+        } catch {
+          // 用户取消清空权限，中止操作
+          return
+        }
       }
 
       loading.value = true

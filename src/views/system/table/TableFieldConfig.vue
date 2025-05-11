@@ -989,6 +989,7 @@
       if (res.success) {
         ElMessage.success('字段排序保存成功')
         sortMode.value = false
+        columnChecks.value[0].checked = false
         // 刷新本组件字段列表
         await loadFieldData()
         // 刷新父组件数据
@@ -1185,14 +1186,17 @@
       cancelButtonText: '取消',
       type: 'warning'
     })
-      .then(() => {
-        ElMessage.info('字段删除功能待实现')
-        // 这里可以添加删除字段的API调用
-        console.log('删除字段:', field)
-        // 删除成功后刷新本组件字段列表
-        loadFieldData()
-        // 刷新父组件数据
-        emit('refresh')
+      .then(async () => {
+        const res = await TableService.deleteTableFieldConfig({ id: field.id })
+        if (res.success) {
+          ElMessage.success('字段配置删除成功')
+          // 删除成功后刷新本组件字段列表
+          await loadFieldData()
+          // 刷新父组件数据
+          emit('refresh')
+        } else {
+          ElMessage.error(res.message || '字段配置删除失败')
+        }
       })
       .catch(() => {
         // 用户取消操作

@@ -14,6 +14,15 @@ import {
 } from './model/tableConfigModel'
 
 export class TableService {
+  // 下载源码
+  static downloadCode(params: { ids: number[] }) {
+    return request.post<Blob>({
+      url: '/api/admin/tableConfig/downloadCode',
+      params,
+      responseType: 'blob'
+    })
+  }
+
   // 获取表格配置列表
   static getTableConfigList(params: TableConfigListParams) {
     return request.get<PageResult<TableConfigModel>>({
@@ -115,12 +124,11 @@ export class TableService {
     })
   }
 
-  // 下载源码
-  static downloadCode(params: { ids: number[] }) {
-    return request.post<Blob>({
-      url: '/api/admin/tableConfig/downloadCode',
-      params,
-      responseType: 'blob'
+  // 删除字段配置
+  static deleteTableFieldConfig(params: { id: number }) {
+    return request.del<BaseResult>({
+      url: '/api/admin/tableFieldConfig/delete',
+      params
     })
   }
 }

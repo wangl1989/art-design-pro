@@ -61,7 +61,7 @@
               title="删除角色"
               type="delete"
               auth="role_delete"
-              @click="deleteRole(scope.row.id)"
+              @click="deleteRole(scope.row)"
             />
             <ArtButtonTable
               title="给角色分配菜单权限"
@@ -257,6 +257,7 @@
       })
       .catch(() => {
         // 用户取消删除操作
+        ElMessage.info('用户取消删除角色操作')
       })
   }
 
